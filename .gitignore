@@ -1,2 +1,15 @@
+# Data and logs
 data/processed/*.csv
-data/raw/*.csv
+data/raw/**/*.csv
+logs/
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+
+# Virtual Environment
+venv/
+.env
