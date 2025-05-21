@@ -1,5 +1,5 @@
 # Data and logs
-data/processed/*.csv
+data/processed/**/*.csv
 data/raw/**/*.csv
 logs/
 
