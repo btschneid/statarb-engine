@@ -1,6 +1,8 @@
 # Data and logs
 data/processed/**/*.csv
 data/raw/**/*.csv
+data/cointegration/*.csv
+data/pairs/*.csv
 logs/
 
 # Python
