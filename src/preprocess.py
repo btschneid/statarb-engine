@@ -55,7 +55,7 @@ def process_and_save_ticker(
     df: pd.DataFrame,
     common_dates: List[pd.Timestamp],
     output_path: str
-) -> None:
+) -> pd.DataFrame:
     """
     Process a single ticker's data and save it to the processed directory.
     
@@ -63,65 +63,62 @@ def process_and_save_ticker(
         df: DataFrame for the ticker
         common_dates: List of dates to keep
         output_path: Path where to save the processed data
+        
+    Returns:
+        Processed DataFrame
     """
     # Filter to common dates and drop NA values
     df_common = df.loc[common_dates].dropna()
     
+    # Round numeric columns
+    if 'adj_close' in df_common.columns:
+        df_common['adj_close'] = df_common['adj_close'].round(2)
+    if 'vol' in df_common.columns:
+        df_common['vol'] = df_common['vol'].round(0).astype(int)
+    
     # Save processed data
     df_common.to_csv(output_path)
-    logger.info(f"Saved processed data to {output_path}")
+    
+    return df_common
 
 def process_category(
     category: str,
     raw_dir: str,
     processed_dir: str
-) -> None:
+) -> dict:
     """
-    Process all tickers within a single category.
-    
-    Args:
-        category: Category name (e.g., 'banks', 'airlines')
-        raw_dir: Path to raw data directory
-        processed_dir: Path to processed data directory
+    Process all tickers within a single category and return processed DataFrames.
     """
     logger.info(f"Processing category: {category}")
-    
-    # Read all data for this category
     category_path = os.path.join(raw_dir, category)
     dfs = read_category_data(category_path)
-    
     if not dfs:
-        return
-        
-    # Find common dates
+        return {}
     common_dates = find_common_dates(dfs)
     if not common_dates:
         logger.warning(f"No common dates found in {category}")
-        return
-        
-    # Create category directory in processed
+        return {}
     category_processed_dir = os.path.join(processed_dir, category)
     os.makedirs(category_processed_dir, exist_ok=True)
-    
-    # Process each ticker
+    processed = {}
     for ticker, df in dfs.items():
         output_path = os.path.join(category_processed_dir, f"{ticker}.csv")
-        process_and_save_ticker(df, common_dates, output_path)
-        
-    logger.info(f"Completed processing {category} with {len(common_dates)} common dates")
+        processed[ticker] = process_and_save_ticker(df, common_dates, output_path)
+    return processed
 
 def preprocess_data():
     """
     Main function to clean and preprocess all ticker data.
     Processes each category separately, aligning dates and removing missing values.
+    Returns a dict of dicts: {category: {ticker: DataFrame}}
     """
     raw_dir = "data/raw"
     processed_dir = "data/processed"
-    
-    # Create processed directory if it doesn't exist
     os.makedirs(processed_dir, exist_ok=True)
-    
-    # Process each category
     categories = get_category_directories(raw_dir)
+    all_processed = {}
     for category in categories:
-        process_category(category, raw_dir, processed_dir)
+        processed = process_category(category, raw_dir, processed_dir)
+        if processed:
+            all_processed[category] = processed
+    return all_processed
