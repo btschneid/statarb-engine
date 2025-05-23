@@ -1,17 +1,2 @@
-# Data and logs
-data/processed/**/*.csv
-data/raw/**/*.csv
-data/cointegration/*.csv
-data/pairs/*.csv
-logs/
-
-# Python
-__pycache__/
-*.pyc
-
-# IDE
-.vscode/
-
-# Virtual Environment
-venv/
-.env
+__pycache__
+data/*.csv
