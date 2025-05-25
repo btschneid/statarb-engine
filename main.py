@@ -14,6 +14,7 @@ from src.data_utils import (
 )
 from src.stats_utils import calculate_pair_statistics
 from src.plot_utils import create_pair_plot, create_single_plot
+from src.cointegration import find_cointegrated_pairs
 
 def clear_session_state():
     """Clear all session state variables"""
@@ -145,30 +146,47 @@ with col4:
 with col6:
     if st.button("Find Best Cointegrated Pair", key="Test", type="secondary"):
         if len(st.session_state.ticker_list) >= 2:
-            indices = random.sample(range(len(st.session_state.ticker_list)), 2)
-            ticker1 = st.session_state.ticker_list[indices[0]]
-            ticker2 = st.session_state.ticker_list[indices[1]]
-
-            if st.session_state.ticker_pair[0] != "":
-                st.session_state.ticker_color_map[st.session_state.ticker_pair[0]] = PRIMARY_COLOR
-                st.session_state.ticker_color_map[st.session_state.ticker_pair[1]] = PRIMARY_COLOR
-            
-            st.session_state.ticker_pair[0] = ticker1
-            st.session_state.ticker_pair[1] = ticker2
-            
-            st.session_state.ticker_color_map[ticker1] = SELECTED_PRIMARY_COLOR
-            st.session_state.ticker_color_map[ticker2] = SELECTED_PRIMARY_COLOR
-
-            pair_data = download_pair_data(
-                ticker1, 
-                ticker2, 
-                st.session_state.start_date, 
+            # Find best cointegrated pair
+            best_pair = find_cointegrated_pairs(
+                st.session_state.ticker_list,
+                st.session_state.start_date,
                 st.session_state.end_date
             )
             
-            st.session_state.pair_data = pair_data
-            st.session_state.should_update_stats = True
+            if best_pair:
+                # Reset colors for previous pair
+                if st.session_state.ticker_pair[0] != "":
+                    st.session_state.ticker_color_map[st.session_state.ticker_pair[0]] = PRIMARY_COLOR
+                    st.session_state.ticker_color_map[st.session_state.ticker_pair[1]] = PRIMARY_COLOR
+                
+                # Update with new pair
+                ticker1 = best_pair['ticker_A']
+                ticker2 = best_pair['ticker_B']
+                
+                st.session_state.ticker_pair[0] = ticker1
+                st.session_state.ticker_pair[1] = ticker2
+                
+                st.session_state.ticker_color_map[ticker1] = SELECTED_PRIMARY_COLOR
+                st.session_state.ticker_color_map[ticker2] = SELECTED_PRIMARY_COLOR
 
+                pair_data = download_pair_data(
+                    ticker1, 
+                    ticker2, 
+                    st.session_state.start_date, 
+                    st.session_state.end_date
+                )
+                
+                st.session_state.pair_data = pair_data
+                st.session_state.should_update_stats = True
+
+                st.rerun()
+            else:
+                st.session_state.error_message = "⚠️ Could not find a cointegrated pair ⚠️"
+                st.session_state.show_error = True
+                st.rerun()
+        else:
+            st.session_state.error_message = "⚠️ Need at least 2 tickers to find a pair ⚠️"
+            st.session_state.show_error = True
             st.rerun()
     
     if st.session_state.show_error:

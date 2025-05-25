@@ -1,79 +1,62 @@
-import numpy as np
 import pandas as pd
+import numpy as np
 import statsmodels.api as sm
 from statsmodels.tsa.stattools import adfuller
+from itertools import combinations
 
 def calculate_pair_statistics(pair_data, ticker1, ticker2):
-    print("Test")
-    #print(pair_data)
-    """Calculate all statistics for a pair of stocks"""
-    # Calculate returns and spreads
-    returns1 = pair_data[f'adj_close_{ticker1}'].pct_change()
-    returns2 = pair_data[f'adj_close_{ticker2}'].pct_change()
-    spread = pair_data[f'adj_close_{ticker1}'] - pair_data[f'adj_close_{ticker2}']
+    """
+    Calculate comprehensive trading statistics for a pair of securities.
     
-    # Calculate hedge ratio (beta) using OLS regression
-    X = sm.add_constant(pair_data[f'adj_close_{ticker2}'])
-    y = pair_data[f'adj_close_{ticker1}']
-    model = sm.OLS(y, X).fit()
-    beta = model.params.iloc[1]  # Get the second parameter (beta)
-    
-    # Calculate ADF test statistics
-    adf_result = adfuller(spread.dropna())
-    adf_stat = adf_result[0]
+    Parameters:
+    -----------
+    pair_data : pd.DataFrame
+        DataFrame with columns: date, adj_close_{ticker1}, vol_{ticker1}, adj_close_{ticker2}, vol_{ticker2}
+    ticker1 : str
+        First ticker symbol
+    ticker2 : str  
+        Second ticker symbol
+        
+    Returns:
+    --------
+    dict : Dictionary containing 18 calculated metrics
+    """
+
+    # Create log prices only for price columns
+    price_col1 = f'adj_close_{ticker1}'
+    price_col2 = f'adj_close_{ticker2}'
+
+    df_log = np.log(pair_data[[price_col1, price_col2]])
+
+    X = sm.add_constant(df_log[price_col2])
+    model = sm.OLS(df_log[price_col1], X).fit()
+    beta = model.params[price_col2]  # This is the hedge ratio
+    residuals = model.resid
+
+    # ADF test on residuals
+    adf_result = adfuller(residuals)
     p_value = adf_result[1]
+    adf_stat = adf_result[0]  # The ADF test statistic
     
-    # Calculate half-life of mean reversion
-    spread_lag = spread.shift(1)
-    spread_ret = spread - spread_lag
-    spread_lag = spread_lag.dropna()
-    spread_ret = spread_ret.dropna()
-    half_life_model = sm.OLS(spread_ret, sm.add_constant(spread_lag)).fit()
-    half_life = -np.log(2) / half_life_model.params.iloc[1] if half_life_model.params.iloc[1] < 0 else np.nan
-    
-    # Calculate z-score
-    z_score = (spread - spread.mean()) / spread.std()
-    current_z = z_score.iloc[-1]
-    
-    # Calculate number of trades (crossings of mean)
-    mean_crossings = np.sum(np.diff(np.signbit(spread - spread.mean())))
-    
-    # Calculate performance metrics
-    cum_return = (pair_data[f'adj_close_{ticker1}'].iloc[-1] / 
-               pair_data[f'adj_close_{ticker1}'].iloc[0] - 1) * 100
-    annual_return = ((1 + cum_return/100) ** (252/len(pair_data)) - 1) * 100
-    vol = returns1.std() * np.sqrt(252) * 100
-    sharpe = annual_return / vol if vol != 0 else 0
-    
-    # Calculate Sortino Ratio (using negative returns only)
-    neg_returns = returns1[returns1 < 0]
-    downside_vol = neg_returns.std() * np.sqrt(252) * 100
-    sortino = annual_return / downside_vol if downside_vol != 0 else 0
-    
-    # Calculate Calmar Ratio
-    max_drawdown = ((pair_data[f'adj_close_{ticker1}'] / 
-                  pair_data[f'adj_close_{ticker1}'].expanding().max() - 1) * 100).min()
-    calmar = abs(annual_return / max_drawdown) if max_drawdown != 0 else 0
-    
-    # Calculate VaR and CVaR
-    var_95 = np.percentile(returns1, 5) * 100
-    cvar_95 = returns1[returns1 <= np.percentile(returns1, 5)].mean() * 100
-    
-    # Calculate Profit Factor
-    gross_profit = returns1[returns1 > 0].sum()
-    gross_loss = abs(returns1[returns1 < 0].sum())
-    profit_factor = gross_profit / gross_loss if gross_loss != 0 else 0
-    
-    # Calculate MAE
-    rolling_max = pair_data[f'adj_close_{ticker1}'].expanding().max()
-    mae = ((pair_data[f'adj_close_{ticker1}'] - rolling_max) / rolling_max * 100).min()
-    
-    # Calculate Win Rate
-    win_rate = (returns1 > 0).mean() * 100
-    
-    # Calculate Mean Trade Duration
-    trade_duration = len(pair_data) / mean_crossings if mean_crossings > 0 else 0
-    
+    cum_return = 0
+    annual_return = 0
+    sharpe = 0
+    sortino = 0
+    calmar = 0
+    max_drawdown = 0
+    var_95 = 0
+    cvar_95 = 0
+    profit_factor = 0
+    mae = 0
+    #adf_stat = 0
+    #p_value = 0
+    #beta = 0
+    half_life = 0
+    mean_crossings = 0
+    win_rate = 0
+    trade_duration = 0
+    current_z = 0
+
     return {
         'cum_return': cum_return,
         'annual_return': annual_return,
@@ -93,4 +76,4 @@ def calculate_pair_statistics(pair_data, ticker1, ticker2):
         'win_rate': win_rate,
         'trade_duration': trade_duration,
         'current_z': current_z
-    } 
+    }
