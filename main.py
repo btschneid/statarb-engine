@@ -6,7 +6,8 @@ from datetime import datetime, timedelta
 
 from src.constants import (
     PRIMARY_COLOR, SELECTED_PRIMARY_COLOR, DEFAULT_TICKERS_LIST,
-    TICKERS_SELECTION_COLORS, DEFAULT_START_DATE, DEFAULT_END_DATE, DATA_FOLDER_PATH
+    TICKERS_SELECTION_COLORS, DEFAULT_START_DATE, DEFAULT_END_DATE, DATA_FOLDER_PATH,
+    FINANCE_TICKERS, HEALTHCARE_TICKERS, TECH_TICKERS, ENERGY_TICKERS
 )
 from src.data_utils import (
     check_and_download_default_data, download_pair_data,
@@ -260,7 +261,7 @@ with col2:
                     st.session_state.show_error = True
                     st.rerun()
 
-    ticker_container = st.container(height=355)
+    ticker_container = st.container(height=300)
     
     with ticker_container:
         for ticker in st.session_state.ticker_list:
@@ -286,9 +287,46 @@ with col2:
             
             with col_remove:
                 if st.button("×", key=f"remove_{ticker}", help=f"Remove {ticker}"):
+                    # Only update if the ticker is in the current pair
+                    if ticker in st.session_state.ticker_pair:
+                        st.session_state.should_update_stats = True
+                        # Reset pair data if we're removing one of the current pair
+                        st.session_state.pair_data = pd.DataFrame(columns=['date', 'adj_close_TICKER1', 'vol_TICKER1', 'adj_close_TICKER2', 'vol_TICKER2'])
+                        st.session_state.ticker_pair = ["", ""]
+                    else:
+                        st.session_state.should_update_stats = False
                     st.session_state.ticker_list.remove(ticker)
-                    st.session_state.ticker_color_map.pop(ticker, None)
+                    st.session_state.ticker_list_updated = True
                     st.rerun()
+    
+    sectors_container = st.container(height=70)
+    
+    with sectors_container:
+        sec1, sec2, sec3, sec4 = st.columns([4, 4, 4, 4])
+        
+        with sec1:
+            if st.button("Finance", key="finance_btn", type="secondary"):
+                st.session_state.ticker_list = FINANCE_TICKERS
+                st.session_state.ticker_color_map = {ticker: PRIMARY_COLOR for ticker in st.session_state.ticker_list}
+                st.rerun()
+        
+        with sec2:
+            if st.button("Health", key="healthcare_btn", type="secondary"):
+                st.session_state.ticker_list = HEALTHCARE_TICKERS
+                st.session_state.ticker_color_map = {ticker: PRIMARY_COLOR for ticker in st.session_state.ticker_list}
+                st.rerun()
+
+        with sec3:
+            if st.button("Tech", key="tech_btn", type="secondary"):
+                st.session_state.ticker_list = TECH_TICKERS
+                st.session_state.ticker_color_map = {ticker: PRIMARY_COLOR for ticker in st.session_state.ticker_list}
+                st.rerun()
+        
+        with sec4:
+            if st.button("Energy", key="utilities_btn", type="secondary"):
+                st.session_state.ticker_list = ENERGY_TICKERS
+                st.session_state.ticker_color_map = {ticker: PRIMARY_COLOR for ticker in st.session_state.ticker_list}
+                st.rerun()
 
 # Bottom Section
 col1, col2 = st.columns([100, 0.001])

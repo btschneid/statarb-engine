@@ -1,7 +1,7 @@
 import pandas as pd
 import yfinance as yf
 import os
-from src.constants import DEFAULT_TICKERS_LIST, DEFAULT_START_DATE, DEFAULT_END_DATE, DATA_FOLDER_PATH
+from src.constants import DEFAULT_TICKERS_LIST, DEFAULT_START_DATE, DEFAULT_END_DATE, DATA_FOLDER_PATH, ALL_TICKERS
 
 # Create data folder if it doesn't exist
 os.makedirs(DATA_FOLDER_PATH, exist_ok=True)
@@ -69,7 +69,7 @@ def download_stock_data(ticker, start_date, end_date):
 
 def check_and_download_default_data():
     """Check and download data for default tickers if not already present"""
-    for ticker in DEFAULT_TICKERS_LIST:
+    for ticker in ALL_TICKERS:
         download_stock_data(ticker, DEFAULT_START_DATE, DEFAULT_END_DATE)
 
 def download_pair_data(ticker1, ticker2, start_date, end_date):
