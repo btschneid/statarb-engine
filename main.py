@@ -164,9 +164,7 @@ with col6:
                 ticker1 = best_pair['ticker_A']
                 ticker2 = best_pair['ticker_B']
                 
-                st.session_state.ticker_pair[0] = ticker1
-                st.session_state.ticker_pair[1] = ticker2
-                
+                st.session_state.ticker_pair = [ticker1, ticker2]
                 st.session_state.ticker_color_map[ticker1] = SELECTED_PRIMARY_COLOR
                 st.session_state.ticker_color_map[ticker2] = SELECTED_PRIMARY_COLOR
 
@@ -179,16 +177,12 @@ with col6:
                 
                 st.session_state.pair_data = pair_data
                 st.session_state.should_update_stats = True
-
-                st.rerun()
             else:
                 st.session_state.error_message = "⚠️ Could not find a cointegrated pair ⚠️"
                 st.session_state.show_error = True
-                st.rerun()
         else:
             st.session_state.error_message = "⚠️ Need at least 2 tickers to find a pair ⚠️"
             st.session_state.show_error = True
-            st.rerun()
     
     if st.session_state.show_error:
         col1, col2, col3 = st.columns([1, 6, 1])
@@ -295,6 +289,7 @@ with col2:
                         st.session_state.ticker_pair = ["", ""]
                     else:
                         st.session_state.should_update_stats = False
+                    
                     st.session_state.ticker_list.remove(ticker)
                     st.session_state.ticker_list_updated = True
                     st.rerun()
@@ -308,25 +303,29 @@ with col2:
             if st.button("Finance", key="finance_btn", type="secondary"):
                 st.session_state.ticker_list = FINANCE_TICKERS
                 st.session_state.ticker_color_map = {ticker: PRIMARY_COLOR for ticker in st.session_state.ticker_list}
-                st.rerun()
+                st.session_state.ticker_pair = ["", ""]
+                st.session_state.pair_data = pd.DataFrame(columns=['date', 'adj_close_TICKER1', 'vol_TICKER1', 'adj_close_TICKER2', 'vol_TICKER2'])
         
         with sec2:
             if st.button("Health", key="healthcare_btn", type="secondary"):
                 st.session_state.ticker_list = HEALTHCARE_TICKERS
                 st.session_state.ticker_color_map = {ticker: PRIMARY_COLOR for ticker in st.session_state.ticker_list}
-                st.rerun()
+                st.session_state.ticker_pair = ["", ""]
+                st.session_state.pair_data = pd.DataFrame(columns=['date', 'adj_close_TICKER1', 'vol_TICKER1', 'adj_close_TICKER2', 'vol_TICKER2'])
 
         with sec3:
             if st.button("Tech", key="tech_btn", type="secondary"):
                 st.session_state.ticker_list = TECH_TICKERS
                 st.session_state.ticker_color_map = {ticker: PRIMARY_COLOR for ticker in st.session_state.ticker_list}
-                st.rerun()
+                st.session_state.ticker_pair = ["", ""]
+                st.session_state.pair_data = pd.DataFrame(columns=['date', 'adj_close_TICKER1', 'vol_TICKER1', 'adj_close_TICKER2', 'vol_TICKER2'])
         
         with sec4:
             if st.button("Energy", key="utilities_btn", type="secondary"):
                 st.session_state.ticker_list = ENERGY_TICKERS
                 st.session_state.ticker_color_map = {ticker: PRIMARY_COLOR for ticker in st.session_state.ticker_list}
-                st.rerun()
+                st.session_state.ticker_pair = ["", ""]
+                st.session_state.pair_data = pd.DataFrame(columns=['date', 'adj_close_TICKER1', 'vol_TICKER1', 'adj_close_TICKER2', 'vol_TICKER2'])
 
 # Bottom Section
 col1, col2 = st.columns([100, 0.001])
