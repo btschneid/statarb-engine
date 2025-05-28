@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any, Tuple
 from pydantic import BaseModel, RootModel
 from datetime import datetime
 
@@ -51,5 +51,15 @@ class ChartDataResponse(RootModel):
 class DateResponse(BaseModel):
     date: str
 
+class MetricMetadata(BaseModel):
+    id: str
+    title: str
+    description: str
+
 class MetricsList(BaseModel):
-    metrics: List[str]
+    metrics: List[MetricMetadata]
+
+class BestPairResponse(BaseModel):
+    pair: Tuple[str, str]
+    metrics: RiskMetrics
+    chart_data: List[Dict[str, Any]]

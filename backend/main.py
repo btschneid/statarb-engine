@@ -2,17 +2,17 @@
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 from services import (
     get_default_tickers, get_ticker_data, get_sectors, get_sector_tickers,
     validate_ticker, validate_tickers, calculate_risk_metrics, get_default_dates,
-    get_default_sector_tickers, get_metrics
+    get_default_sector_tickers, get_metrics, find_best_cointegrated_pair
 )
 from schemas import (
     TickerValidation, DefaultTickers, ChartDataResponse,
     SectorsResponse, SectorTickersResponse, RiskMetrics,
-    DateResponse, MetricsList
+    DateResponse, MetricsList, BestPairResponse
 )
 from config import (
     API_TITLE, API_VERSION, API_DESCRIPTION,
@@ -43,9 +43,7 @@ app.add_middleware(
 def validate_ticker_endpoint(ticker: str):
     """Validate if a ticker exists on Yahoo Finance"""
     valid, name = validate_ticker(ticker)
-    if not valid:
-        raise HTTPException(status_code=404, detail=f"Ticker {ticker} not found")
-    return {"valid": valid, "name": name}
+    return {"valid": valid, "name": name if valid else ""}
 
 @app.get("/tickers/validate", response_model=Dict[str, TickerValidation])
 def validate_tickers_endpoint(tickers: List[str] = Query(...)):
@@ -75,8 +73,6 @@ def get_risk_metrics(
     end: str = DEFAULT_END_DATE
 ):
     """Get risk metrics for the specified tickers"""
-    if len(tickers) > 2:
-        raise HTTPException(status_code=400, detail="Max of 2 tickers allowed")
     try:
         df = get_ticker_data(tickers, start, end)
         if df.empty:
@@ -150,4 +146,29 @@ def get_all_metrics():
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error getting metrics list: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/find-best-pair", response_model=BestPairResponse)
+def find_best_pair_endpoint(
+    tickers: List[str] = Query(...),
+    start: str = DEFAULT_START_DATE,
+    end: str = DEFAULT_END_DATE
+):
+    """Find the best cointegrated pair from a list of tickers"""
+    if len(tickers) < 2:
+        raise HTTPException(status_code=400, detail="At least 2 tickers required")
+    
+    try:
+        # Find the best pair and get its metrics and chart data
+        best_pair, metrics, chart_data = find_best_cointegrated_pair(tickers, start, end)
+        
+        return {
+            "pair": best_pair,
+            "metrics": metrics,
+            "chart_data": chart_data
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error finding best pair: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
