@@ -28,3 +28,28 @@ DEFAULT_TICKERS = {
     "tech": TECH_TICKERS,
     "energy": ENERGY_TICKERS
 } 
+
+# Default Sector
+DEFAULT_SECTOR = "tech"
+
+# List of metrics
+METRICS = [
+    "cumulative_return",
+    "annualized_return",
+    "sharpe_ratio",
+    "sortino_ratio",
+    "calmar_ratio",
+    "max_drawdown",
+    "var_95",
+    "cvar_95",
+    "profit_factor",
+    "mae",
+    "adf_statistic",
+    "p_value",
+    "hedge_ratio",
+    "half_life_days",
+    "number_of_trades",
+    "win_rate",
+    "mean_duration",
+    "z_score"
+]

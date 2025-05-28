@@ -48,3 +48,8 @@ class ChartDataPoint(BaseModel):
 class ChartDataResponse(RootModel):
     root: List[ChartDataPoint]
 
+class DateResponse(BaseModel):
+    date: str
+
+class MetricsList(BaseModel):
+    metrics: List[str]

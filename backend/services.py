@@ -4,7 +4,7 @@ import numpy as np
 from typing import List, Dict, Optional, Tuple
 from config import (
     DEFAULT_START_DATE, DEFAULT_END_DATE,
-    DEFAULT_TICKERS
+    DEFAULT_TICKERS, DEFAULT_SECTOR, METRICS
 )
 
 def validate_ticker(ticker: str) -> Tuple[bool, str]:
@@ -95,4 +95,20 @@ def get_ticker_data(tickers: List[str], start_date: str, end_date: str) -> pd.Da
     
     return df
 
+def get_default_dates(date_type: str):
+    if date_type not in ["start", "end"]:
+        raise ValueError(f"Invalid date type")
 
+    if date_type == "start":
+        return DEFAULT_START_DATE
+
+    return DEFAULT_END_DATE
+
+def get_default_sector_tickers():
+    if DEFAULT_SECTOR not in DEFAULT_TICKERS:
+        raise ValueError(f"Invalid default sector")
+    
+    return DEFAULT_TICKERS[DEFAULT_SECTOR]
+
+def get_metrics():
+    return METRICS

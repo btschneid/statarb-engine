@@ -6,11 +6,13 @@ from typing import List, Dict
 
 from services import (
     get_default_tickers, get_ticker_data, get_sectors, get_sector_tickers,
-    validate_ticker, validate_tickers, calculate_risk_metrics
+    validate_ticker, validate_tickers, calculate_risk_metrics, get_default_dates,
+    get_default_sector_tickers, get_metrics
 )
 from schemas import (
     TickerValidation, DefaultTickers, ChartDataResponse,
-    SectorsResponse, SectorTickersResponse, RiskMetrics
+    SectorsResponse, SectorTickersResponse, RiskMetrics,
+    DateResponse, MetricsList
 )
 from config import (
     API_TITLE, API_VERSION, API_DESCRIPTION,
@@ -104,4 +106,48 @@ def get_chart_data(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error getting ticker data: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/default-start-date", response_model=DateResponse)
+def get_default_start_date():
+    try:
+        date = get_default_dates("start")
+        return {"date": date}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error getting start date: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/default-end-date", response_model=DateResponse)
+def get_default_end_date():
+    try:
+        date = get_default_dates("end")
+        return {"date": date}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error getting end date: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+    
+@app.get("/default-sector-tickers", response_model=SectorTickersResponse)
+def get_default_tickers_by_sector():
+    try:
+        tickers = get_default_sector_tickers()
+        return {"tickers": tickers}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error getting default tickers: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+    
+@app.get("/metrics-list", response_model=MetricsList)
+def get_all_metrics():
+    try:
+        metrics = get_metrics()
+        return {"metrics": metrics}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error getting metrics list: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
