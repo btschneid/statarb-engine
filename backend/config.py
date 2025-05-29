@@ -23,14 +23,14 @@ ENERGY_TICKERS = ["XOM", "CVX", "COP", "SLB", "EOG"]
 
 # Default Tickers by Category
 DEFAULT_TICKERS = {
-    "finance": FINANCE_TICKERS,
-    "healthcare": HEALTHCARE_TICKERS,
-    "tech": TECH_TICKERS,
-    "energy": ENERGY_TICKERS
+    "Finance": FINANCE_TICKERS,
+    "Healthcare": HEALTHCARE_TICKERS,
+    "Tech": TECH_TICKERS,
+    "Energy": ENERGY_TICKERS
 } 
 
 # Default Sector
-DEFAULT_SECTOR = "tech"
+DEFAULT_SECTOR = "Tech"
 
 # List of metrics
 METRICS = [

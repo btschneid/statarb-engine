@@ -159,12 +159,11 @@ def find_best_pair_endpoint(
         raise HTTPException(status_code=400, detail="At least 2 tickers required")
     
     try:
-        # Find the best pair and get its metrics and chart data
-        best_pair, metrics, chart_data = find_best_cointegrated_pair(tickers, start, end)
+        # Find the best pair and get its chart data
+        best_pair, chart_data = find_best_cointegrated_pair(tickers, start, end)
         
         return {
             "pair": best_pair,
-            "metrics": metrics,
             "chart_data": chart_data
         }
     except ValueError as e:

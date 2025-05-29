@@ -61,5 +61,4 @@ class MetricsList(BaseModel):
 
 class BestPairResponse(BaseModel):
     pair: Tuple[str, str]
-    metrics: RiskMetrics
     chart_data: List[Dict[str, Any]]

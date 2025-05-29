@@ -208,10 +208,10 @@ def get_metrics():
         }
     ]
 
-def find_best_cointegrated_pair(tickers: List[str], start: str, end: str) -> Tuple[Tuple[str, str], Dict[str, float], List[Dict[str, Any]]]:
+def find_best_cointegrated_pair(tickers: List[str], start: str, end: str) -> Tuple[Tuple[str, str], List[Dict[str, Any]]]:
     """
     Find the best cointegrated pair from a list of tickers.
-    Returns the best pair, its metrics, and chart data.
+    Returns the best pair and chart data.
     """
     if len(tickers) < 2:
         raise ValueError("At least 2 tickers required")
@@ -228,7 +228,6 @@ def find_best_cointegrated_pair(tickers: List[str], start: str, end: str) -> Tup
     # Find best cointegrated pair
     best_p_value = float('inf')
     best_pair = None
-    best_metrics = None
     best_chart_data = None
 
     # Try all possible pairs
@@ -245,40 +244,13 @@ def find_best_cointegrated_pair(tickers: List[str], start: str, end: str) -> Tup
                 # Calculate cointegration
                 _, p_value, _ = coint(prices1, prices2)
 
-                # If this pair has better cointegration, calculate its metrics
+                # If this pair has better cointegration, save it
                 if p_value < best_p_value:
                     best_p_value = p_value
                     best_pair = (ticker1, ticker2)
 
-                    # Calculate metrics for this pair
-                    pair_df = df[[ticker1, ticker2]]
-                    metrics = calculate_risk_metrics(pair_df)
-                    
-                    # Ensure metrics has all required fields
-                    required_metrics = {
-                        "cumulative_return": 0.0,
-                        "annualized_return": 0.0,
-                        "sharpe_ratio": 0.0,
-                        "sortino_ratio": 0.0,
-                        "calmar_ratio": 0.0,
-                        "max_drawdown": 0.0,
-                        "var_95": 0.0,
-                        "cvar_95": 0.0,
-                        "profit_factor": 0.0,
-                        "mae": 0.0,
-                        "adf_statistic": 0.0,
-                        "p_value": p_value,  # Use the actual p-value
-                        "hedge_ratio": 0.0,
-                        "half_life_days": 0.0,
-                        "number_of_trades": 0,
-                        "win_rate": 0.0,
-                        "mean_duration": 0.0,
-                        "z_score": 0.0
-                    }
-                    # Update with any calculated metrics
-                    metrics.update(required_metrics)
-
                     # Get chart data for this pair
+                    pair_df = df[[ticker1, ticker2]]
                     chart_data = []
                     for date, row in pair_df.iterrows():
                         # Convert date to string format if it's a datetime
@@ -289,14 +261,13 @@ def find_best_cointegrated_pair(tickers: List[str], start: str, end: str) -> Tup
                             ticker2: float(row[ticker2])
                         })
 
-                    best_metrics = metrics
                     best_chart_data = chart_data
 
             except Exception as e:
                 logging.error(f"Error processing pair {ticker1}-{ticker2}: {str(e)}")
                 continue
 
-    if best_pair is None or best_metrics is None or best_chart_data is None:
+    if best_pair is None or best_chart_data is None:
         raise ValueError("No valid cointegrated pairs found")
 
-    return best_pair, best_metrics, best_chart_data
+    return best_pair, best_chart_data

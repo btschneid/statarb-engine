@@ -51,7 +51,7 @@ interface ChartDataPoint {
 
 interface BestPairResponse {
   pair: [string, string];
-  metrics: RiskMetrics;
+  metrics: Record<string, number>;
   chart_data: ChartDataPoint[];
 }
 
@@ -66,6 +66,7 @@ function App() {
   const [defaultTickers, setDefaultTickers] = useState<string[]>([])
   const [chartData, setChartData] = useState<ChartDataPoint[] | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [clearTickers, setClearTickers] = useState(false)
 
   // Fetch default sector tickers
   useEffect(() => {
@@ -236,29 +237,8 @@ function App() {
         params
       });
   
-      const { pair, metrics, chart_data } = response.data;
+      const { pair, chart_data } = response.data;
       console.log('Best cointegrated pair:', pair);
-  
-      setStatisticsValues({
-        cumulative_return: metrics.cumulative_return,
-        annualized_return: metrics.annualized_return,
-        sharpe_ratio: metrics.sharpe_ratio,
-        sortino_ratio: metrics.sortino_ratio,
-        calmar_ratio: metrics.calmar_ratio,
-        max_drawdown: metrics.max_drawdown,
-        var_95: metrics.var_95,
-        cvar_95: metrics.cvar_95,
-        profit_factor: metrics.profit_factor,
-        mae: metrics.mae,
-        adf_statistic: metrics.adf_statistic,
-        p_value: metrics.p_value,
-        hedge_ratio: metrics.hedge_ratio,
-        half_life_days: metrics.half_life_days,
-        number_of_trades: metrics.number_of_trades,
-        win_rate: metrics.win_rate,
-        mean_duration: metrics.mean_duration,
-        z_score: metrics.z_score
-      });
   
       setChartData(chart_data);
       setDisplayedTickers(pair);
@@ -268,6 +248,13 @@ function App() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleClearTickers = () => {
+    setCurrentTickers([]);
+    setChartData(null);
+    setDisplayedTickers([]);
+    setClearTickers(true);
   };
 
   return (
@@ -290,19 +277,27 @@ function App() {
             </h1>
           </div>
 
-          {/* Find Best Pair Button */}
+          {/* Buttons Container */}
           <div className="col-span-4 bg-white rounded-lg shadow p-4">
-            <button 
-              onClick={handleFindBestPair}
-              disabled={isLoading || currentTickers.length < 2}
-              className={`w-full py-3 px-4 rounded-md transition-colors ${
-                isLoading || currentTickers.length < 2
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-            >
-              {isLoading ? 'Loading...' : 'Find Best Cointegrated Pair'}
-            </button>
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                onClick={handleFindBestPair}
+                disabled={isLoading || currentTickers.length < 2}
+                className={`w-full py-3 px-4 rounded-md transition-colors ${
+                  isLoading || currentTickers.length < 2
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+              >
+                {isLoading ? 'Loading...' : 'Find Best Cointegrated Pair'}
+              </button>
+              <button 
+                onClick={handleClearTickers}
+                className="w-full py-3 px-4 rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors"
+              >
+                Clear Ticker List
+              </button>
+            </div>
           </div>
         </div>
 
@@ -314,6 +309,8 @@ function App() {
             onSectorSelect={handleSectorSelect}
             onTickersChange={handleTickersChange}
             initialTickers={defaultTickers}
+            clearTickers={clearTickers}
+            bestPairTickers={displayedTickers}
           />
         </div>
 
