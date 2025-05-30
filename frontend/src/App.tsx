@@ -68,6 +68,8 @@ function App() {
   const [chartData, setChartData] = useState<ChartDataPoint[] | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [clearTickers, setClearTickers] = useState(false)
+  const [prevStartDate, setPrevStartDate] = useState('')
+  const [prevEndDate, setPrevEndDate] = useState('')
   const isSectorChange = useRef(false)
   const isFindBestPair = useRef(false)
 
@@ -158,12 +160,17 @@ function App() {
       if (currentTickers.length >= 2) {
         const tickersToDisplay = currentTickers.slice(0, 2);
         
-        // Only fetch if the first 2 tickers are different from currently displayed
+        // Check if tickers are different from currently displayed
         const isDifferentPair = tickersToDisplay.length !== displayedTickers.length || 
                                tickersToDisplay.some((ticker, index) => ticker !== displayedTickers[index]);
         
-        if (isDifferentPair) {
-          debugLog('📊 [App] Ticker pair changed, fetching chart data for:', tickersToDisplay, '(was:', displayedTickers, ')');
+        // Check if dates have changed
+        const isDifferentDates = startDate !== prevStartDate || endDate !== prevEndDate;
+        
+        // Fetch if either tickers or dates have changed
+        if (isDifferentPair || isDifferentDates) {
+          const reason = isDifferentPair ? 'ticker pair changed' : 'dates changed';
+          debugLog(`📊 [App] ${reason}, fetching chart data for:`, tickersToDisplay, isDifferentPair ? `(was: ${displayedTickers})` : `(dates: ${prevStartDate} to ${prevEndDate} -> ${startDate} to ${endDate})`);
           try {
             const params = new URLSearchParams();
             tickersToDisplay.forEach(ticker => {
@@ -178,11 +185,13 @@ function App() {
             debugLog('✅ [App] Chart data fetched successfully, data points:', response.data.length);
             setChartData(response.data);
             setDisplayedTickers(tickersToDisplay);
+            setPrevStartDate(startDate);
+            setPrevEndDate(endDate);
           } catch (error) {
             debugError('❌ [App] Error fetching initial chart data:', error);
           }
         } else {
-          debugLog('⏸️ [App] Ticker pair unchanged, skipping chart data fetch:', tickersToDisplay);
+          debugLog('⏸️ [App] No changes detected, skipping chart data fetch:', tickersToDisplay);
         }
       } else {
         debugLog('⏸️ [App] Not enough tickers for chart data (need 2, have', currentTickers.length, ')');
@@ -195,7 +204,7 @@ function App() {
     };
   
     fetchInitialChartData();
-  }, [currentTickers, startDate, endDate, displayedTickers]);
+  }, [currentTickers, startDate, endDate, displayedTickers, prevStartDate, prevEndDate]);
 
   // Function to update a single statistic value
   const updateStatistic = (id: string, value: number) => {
