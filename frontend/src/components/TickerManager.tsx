@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../services/api';
+import { debugLog, debugError } from '../utils/debug';
 
 interface TickerManagerProps {
   onTickerAdd: (ticker: string) => void;
@@ -39,18 +40,31 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
 
   // Reset selected tickers when bestPairTickers changes
   useEffect(() => {
-    if (bestPairTickers.length > 0 && !clearTickers) {
+    debugLog('🔄 [TickerManager] useEffect: bestPairTickers changed', {
+      bestPairTickers,
+      clearTickers,
+      currentSelectedTickers: selectedTickers
+    });
+    if (bestPairTickers.length > 0) {
+      debugLog('✅ [TickerManager] Setting selected tickers to bestPairTickers:', bestPairTickers);
       setSelectedTickers(bestPairTickers);
     }
   }, [bestPairTickers, clearTickers]);
 
   // Handle clearing tickers
   useEffect(() => {
+    debugLog('🔄 [TickerManager] useEffect: clearTickers changed', {
+      clearTickers,
+      currentTickers: tickers.length,
+      tickersList: tickers
+    });
     if (clearTickers) {
+      debugLog('🧹 [TickerManager] Clearing all tickers and selections');
       setTickers([]);
       setSelectedTickers([]);
       // Only notify parent if we actually had tickers to clear
       if (tickers.length > 0) {
+        debugLog('📤 [TickerManager] Notifying parent of ticker clearance');
         onTickersChange([]);
       }
     }
@@ -58,105 +72,139 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
 
   // Fetch sectors from backend
   useEffect(() => {
+    debugLog('🔄 [TickerManager] useEffect: Fetching sectors from backend');
     apiClient.get<SectorsResponse>('/sectors')
       .then(res => {
         if (res.data && res.data.sectors) {
+          debugLog('✅ [TickerManager] Sectors fetched:', res.data.sectors);
           setSectors(res.data.sectors);
         }
       })
       .catch(err => {
-        console.error('Failed to fetch sectors', err);
+        debugError('❌ [TickerManager] Failed to fetch sectors', err);
       });
   }, []);
 
   // Handle initial tickers
   useEffect(() => {
+    debugLog('🔄 [TickerManager] useEffect: initialTickers changed', {
+      initialTickers: initialTickers.length,
+      initialTickersList: initialTickers,
+      currentTickers: tickers.length,
+      currentTickersList: tickers
+    });
     if (initialTickers.length > 0 && tickers.length === 0) {
+      debugLog('🎯 [TickerManager] Setting initial tickers and notifying parent');
       setTickers(initialTickers);
       initialTickers.forEach(ticker => {
+        debugLog('📤 [TickerManager] Adding initial ticker:', ticker);
         onTickerAdd(ticker);
       });
     }
   }, [initialTickers]);
 
-  // Notify parent when tickers change
+  // Notify parent when tickers change (avoid during sector changes)
   useEffect(() => {
+    debugLog('🔄 [TickerManager] useEffect: tickers changed', {
+      tickersCount: tickers.length,
+      tickersList: tickers
+    });
+    debugLog('📤 [TickerManager] Notifying parent of ticker change');
     onTickersChange(tickers);
   }, [tickers, onTickersChange]);
 
   const handleAddTicker = async () => {
+    debugLog('🎯 [TickerManager] handleAddTicker called with:', tickerInput);
     if (!tickerInput) return;
 
     const tickerToValidate = tickerInput.toUpperCase();
+    debugLog('🔍 [TickerManager] Validating ticker:', tickerToValidate);
     
     // Don't add if already in list
     if (tickers.includes(tickerToValidate)) {
-      console.log('Ticker already in list');
+      debugLog('⚠️ [TickerManager] Ticker already in list:', tickerToValidate);
       return;
     }
 
     try {
       const response = await apiClient.get<TickerValidation>(`/tickers/validate/${tickerToValidate}`);
       if (response.data.valid) {
+        debugLog('✅ [TickerManager] Ticker valid, adding to list:', tickerToValidate, '(' + response.data.name + ')');
         setTickers([...tickers, tickerToValidate]);
         onTickerAdd(tickerToValidate);
         setTickerInput('');
-        console.log(`Added valid ticker: ${tickerToValidate} (${response.data.name})`);
       } else {
-        console.log(`Invalid ticker: ${tickerToValidate}`);
+        debugLog('❌ [TickerManager] Invalid ticker:', tickerToValidate);
       }
     } catch (error) {
-      console.log(`Invalid ticker: ${tickerToValidate}`);
+      debugError('❌ [TickerManager] Error validating ticker:', tickerToValidate, error);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+      debugLog('⌨️ [TickerManager] Enter key pressed, adding ticker');
       handleAddTicker();
     }
   };
 
   const handleRemoveTicker = (tickerToRemove: string) => {
-    setTickers(tickers.filter(ticker => ticker !== tickerToRemove));
+    debugLog('🗑️ [TickerManager] Removing ticker:', tickerToRemove);
+    const newTickers = tickers.filter(ticker => ticker !== tickerToRemove);
+    debugLog('📝 [TickerManager] New ticker list:', newTickers);
+    setTickers(newTickers);
   };
 
   const handleSectorSelect = async (sector: string) => {
+    debugLog('🏢 [TickerManager] Sector selected:', sector);
     setIsLoading(true);
     try {
+      debugLog('🌐 [TickerManager] Fetching tickers for sector:', sector);
       const response = await apiClient.get<SectorTickersResponse>(`/sectors/${sector}/tickers`);
       if (response.data && response.data.tickers) {
-        // Clear existing tickers and set new ones
+        debugLog('✅ [TickerManager] Sector tickers received:', response.data.tickers);
+        // Set all tickers at once instead of individual calls
         setTickers(response.data.tickers);
-        // Notify parent about sector selection
         onSectorSelect(sector);
-        // Notify parent about each new ticker
-        response.data.tickers.forEach(ticker => {
-          onTickerAdd(ticker);
-        });
+        // Pass all tickers at once instead of calling onTickerAdd multiple times
+        debugLog('📤 [TickerManager] Notifying parent of sector ticker change');
+        onTickersChange(response.data.tickers); // This should replace the forEach loop
       }
     } catch (error) {
-      console.error(`Failed to fetch tickers for sector ${sector}:`, error);
+      debugError('❌ [TickerManager] Failed to fetch tickers for sector', sector, ':', error);
     } finally {
       setIsLoading(false);
+      debugLog('✅ [TickerManager] Sector selection complete for:', sector);
     }
   };
 
   const handleTickerClick = (ticker: string) => {
+    debugLog('👆 [TickerManager] Ticker clicked:', ticker, 'Current selection:', selectedTickers);
     setSelectedTickers(prev => {
+      let newSelection: string[];
       // If we already have a pair selected, start fresh
       if (prev.length === 2) {
-        return [ticker];
+        newSelection = [ticker];
+        debugLog('🔄 [TickerManager] Had 2 selected, starting fresh with:', ticker);
       }
       // If we have one selected and it's not the same ticker, add it
-      if (prev.length === 1 && !prev.includes(ticker)) {
-        return [...prev, ticker];
+      else if (prev.length === 1 && !prev.includes(ticker)) {
+        newSelection = [...prev, ticker];
+        debugLog('➕ [TickerManager] Adding second ticker, pair:', newSelection);
       }
       // If we have one selected and it's the same ticker, remove it
-      if (prev.length === 1 && prev.includes(ticker)) {
-        return [];
+      else if (prev.length === 1 && prev.includes(ticker)) {
+        newSelection = [];
+        debugLog('➖ [TickerManager] Deselecting ticker, clearing selection');
       }
       // If we have none selected, add it
-      return [ticker];
+      else {
+        newSelection = [ticker];
+        debugLog('🎯 [TickerManager] First ticker selected:', ticker);
+      }
+      
+      debugLog('📊 [TickerManager] Selection changed from', prev, 'to', newSelection);
+      return newSelection;
     });
   };
 
@@ -242,7 +290,7 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
             className="w-full bg-indigo-600 text-white py-3 px-4 rounded-md hover:bg-indigo-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             disabled={selectedTickers.length !== 2}
             onClick={() => {
-              console.log('Run Metrics clicked:', {
+              debugLog('Run Metrics clicked:', {
                 bestPairTickers,
                 selectedTickers
               });

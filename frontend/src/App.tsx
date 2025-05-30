@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { DateRangeSelector } from './components/DateRangeSelector'
 import { TickerManager } from './components/TickerManager'
 import { StockGraph } from './components/StockGraph'
 import { StatisticsGrid } from './components/StatisticsGrid'
 import apiClient from './services/api'
+import { debugLog, debugError } from './utils/debug'
 
 interface DateResponse {
   date: string;
@@ -67,51 +68,61 @@ function App() {
   const [chartData, setChartData] = useState<ChartDataPoint[] | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [clearTickers, setClearTickers] = useState(false)
+  const isSectorChange = useRef(false)
+  const isFindBestPair = useRef(false)
 
   // Fetch default sector tickers
   useEffect(() => {
+    debugLog('🔄 [App] useEffect: Fetching default sector tickers');
     apiClient.get<SectorTickersResponse>('/default-sector-tickers')
       .then(res => {
         if (res.data && res.data.tickers) {
+          debugLog('✅ [App] Default sector tickers fetched:', res.data.tickers);
           setDefaultTickers(res.data.tickers)
         }
       })
       .catch(err => {
-        console.error('Failed to fetch default sector tickers', err)
+        debugError('❌ [App] Failed to fetch default sector tickers', err)
       })
   }, [])
 
   // Fetch default start date
   useEffect(() => {
+    debugLog('🔄 [App] useEffect: Fetching default start date');
     apiClient.get<DateResponse>('/default-start-date')
       .then(res => {
         if (res.data && res.data.date) {
+          debugLog('✅ [App] Default start date fetched:', res.data.date);
           setStartDate(res.data.date)
         }
       })
       .catch(err => {
-        console.error('Failed to fetch default start date', err)
+        debugError('❌ [App] Failed to fetch default start date', err)
       })
   }, [])
 
   // Fetch default end date
   useEffect(() => {
+    debugLog('🔄 [App] useEffect: Fetching default end date');
     apiClient.get<DateResponse>('/default-end-date')
       .then(res => {
         if (res.data && res.data.date) {
+          debugLog('✅ [App] Default end date fetched:', res.data.date);
           setEndDate(res.data.date)
         }
       })
       .catch(err => {
-        console.error('Failed to fetch default end date', err)
+        debugError('❌ [App] Failed to fetch default end date', err)
       })
   }, [])
 
   // Fetch metrics metadata
   useEffect(() => {
+    debugLog('🔄 [App] useEffect: Fetching metrics metadata');
     apiClient.get<MetricsResponse>('/metrics-list')
       .then(res => {
         if (res.data && res.data.metrics) {
+          debugLog('✅ [App] Metrics metadata fetched:', res.data.metrics.length, 'metrics');
           setMetricsMetadata(res.data.metrics)
           // Initialize all statistics with 0
           const initialValues = Object.fromEntries(
@@ -121,36 +132,70 @@ function App() {
         }
       })
       .catch(err => {
-        console.error('Failed to fetch metrics metadata', err)
+        debugError('❌ [App] Failed to fetch metrics metadata', err)
       })
   }, [])
 
   // Fetch initial chart data when we have at least 2 tickers
   useEffect(() => {
+    debugLog('🔄 [App] useEffect: Chart data dependency change detected', {
+      currentTickers: currentTickers.length,
+      tickersList: currentTickers,
+      startDate,
+      endDate,
+      currentlyDisplayed: displayedTickers,
+      isFindBestPair: isFindBestPair.current
+    });
+    
+    // Skip if we're in the middle of a "Find Best Pair" operation
+    if (isFindBestPair.current) {
+      debugLog('⏸️ [App] Skipping chart fetch - Find Best Pair operation in progress');
+      isFindBestPair.current = false; // Reset flag
+      return;
+    }
+    
     const fetchInitialChartData = async () => {
       if (currentTickers.length >= 2) {
-        try {
-          const params = new URLSearchParams();
-          const tickersToDisplay = currentTickers.slice(0, 2);
-          tickersToDisplay.forEach(ticker => {
-            params.append('tickers', ticker);
-          });
-          params.append('start', startDate);
-          params.append('end', endDate);
-  
-          const response = await apiClient.get<ChartDataPoint[]>('/chart-data', {
-            params: params
-          });
-          setChartData(response.data);
-          setDisplayedTickers(tickersToDisplay);
-        } catch (error) {
-          console.error('Error fetching initial chart data:', error);
+        const tickersToDisplay = currentTickers.slice(0, 2);
+        
+        // Only fetch if the first 2 tickers are different from currently displayed
+        const isDifferentPair = tickersToDisplay.length !== displayedTickers.length || 
+                               tickersToDisplay.some((ticker, index) => ticker !== displayedTickers[index]);
+        
+        if (isDifferentPair) {
+          debugLog('📊 [App] Ticker pair changed, fetching chart data for:', tickersToDisplay, '(was:', displayedTickers, ')');
+          try {
+            const params = new URLSearchParams();
+            tickersToDisplay.forEach(ticker => {
+              params.append('tickers', ticker);
+            });
+            params.append('start', startDate);
+            params.append('end', endDate);
+    
+            const response = await apiClient.get<ChartDataPoint[]>('/chart-data', {
+              params: params
+            });
+            debugLog('✅ [App] Chart data fetched successfully, data points:', response.data.length);
+            setChartData(response.data);
+            setDisplayedTickers(tickersToDisplay);
+          } catch (error) {
+            debugError('❌ [App] Error fetching initial chart data:', error);
+          }
+        } else {
+          debugLog('⏸️ [App] Ticker pair unchanged, skipping chart data fetch:', tickersToDisplay);
+        }
+      } else {
+        debugLog('⏸️ [App] Not enough tickers for chart data (need 2, have', currentTickers.length, ')');
+        if (displayedTickers.length > 0) {
+          debugLog('🧹 [App] Clearing chart data due to insufficient tickers');
+          setChartData(null);
+          setDisplayedTickers([]);
         }
       }
     };
   
     fetchInitialChartData();
-  }, [currentTickers, startDate, endDate]);
+  }, [currentTickers, startDate, endDate, displayedTickers]);
 
   // Function to update a single statistic value
   const updateStatistic = (id: string, value: number) => {
@@ -169,42 +214,32 @@ function App() {
   }
 
   const handleTickerAdd = (ticker: string) => {
-    setCurrentTickers(prev => [...prev, ticker]);
+    debugLog('📥 [App] handleTickerAdd called with:', ticker);
+    debugLog('📝 [App] Current tickers before add:', currentTickers);
+    setCurrentTickers(prev => {
+      const newTickers = [...prev, ticker];
+      debugLog('📝 [App] New tickers after add:', newTickers);
+      return newTickers;
+    });
   };
 
   const handleTickersChange = (tickers: string[]) => {
+    debugLog('🔄 [App] handleTickersChange called with:', tickers);
+    debugLog('📝 [App] Previous currentTickers:', currentTickers);
+    debugLog('🏢 [App] Is sector change:', isSectorChange.current);
     setCurrentTickers(tickers);
     
-    // If we removed a ticker that was being displayed, update the chart
-    if (displayedTickers.some(ticker => !tickers.includes(ticker))) {
-      const newDisplayedTickers = tickers.slice(0, 2);
-      if (newDisplayedTickers.length >= 2) {
-        const params = new URLSearchParams();
-        newDisplayedTickers.forEach(ticker => {
-          params.append('tickers', ticker);
-        });
-        params.append('start', startDate);
-        params.append('end', endDate);
-
-        apiClient.get<ChartDataPoint[]>('/chart-data', {
-          params: params
-        })
-        .then(response => {
-          setChartData(response.data);
-          setDisplayedTickers(newDisplayedTickers);
-        })
-        .catch(error => {
-          console.error('Error updating chart data:', error);
-        });
-      } else {
-        // If we don't have enough tickers, clear the chart
-        setChartData(null);
-        setDisplayedTickers([]);
-      }
+    // Reset sector change flag after handling
+    if (isSectorChange.current) {
+      debugLog('🔄 [App] Resetting sector change flag');
+      isSectorChange.current = false;
     }
   };
 
   const handleSectorSelect = (sector: string) => {
+    debugLog('🏢 [App] handleSectorSelect called with:', sector);
+    debugLog('🏢 [App] Setting sector change flag to prevent duplicate chart fetches');
+    isSectorChange.current = true;
     setSelectedSector(sector)
   }
 
@@ -215,12 +250,14 @@ function App() {
   }))
 
   const handleFindBestPair = async () => {
+    debugLog('🔍 [App] handleFindBestPair called with tickers:', currentTickers);
     if (currentTickers.length < 2) {
-      console.log('Please select at least 2 tickers');
+      debugLog('⚠️ [App] Not enough tickers for best pair analysis');
       return;
     }
   
     setIsLoading(true);
+    debugLog('🎯 [App] Starting best pair analysis...');
     try {
       const params = new URLSearchParams();
       
@@ -238,23 +275,31 @@ function App() {
       });
   
       const { pair, chart_data } = response.data;
-      console.log('Best cointegrated pair:', pair);
+      debugLog('✅ [App] Best cointegrated pair found:', pair);
+      
+      // Set flag to prevent useEffect from overriding our best pair data
+      debugLog('�� [App] Setting find best pair flag to prevent useEffect override');
+      isFindBestPair.current = true;
   
       setChartData(chart_data);
       setDisplayedTickers(pair);
-      console.log('Successfully updated with best pair data');
+      debugLog('✅ [App] Successfully updated with best pair data');
     } catch (error) {
-      console.error('Error finding best pair:', error);
+      debugError('❌ [App] Error finding best pair:', error);
     } finally {
       setIsLoading(false);
+      debugLog('✅ [App] Best pair analysis complete');
     }
   };
 
   const handleClearTickers = () => {
+    debugLog('🧹 [App] handleClearTickers called');
+    debugLog('📝 [App] Clearing tickers, chart data, and displayed tickers');
     setCurrentTickers([]);
     setChartData(null);
     setDisplayedTickers([]);
     setClearTickers(true);
+    debugLog('✅ [App] Clear operation complete');
   };
 
   return (
