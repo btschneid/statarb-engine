@@ -50,15 +50,23 @@ const StatisticCard: React.FC<StatisticProps> = ({ id, title, value, description
 
 export const StatisticsGrid: React.FC<StatisticsGridProps> = ({ statistics }) => {
   return (
-    <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="col-span-12 grid grid-cols-6 grid-rows-3 gap-3">
       {statistics.map((stat) => (
-        <div key={stat.id} className="card p-4">
+        <div key={stat.id} className="card p-2">
           <div className="flex flex-col">
-            <h3 className="text-sm font-medium mb-1" style={{ color: 'rgb(var(--color-muted-foreground))' }}>{stat.title}</h3>
-            <p className="text-2xl font-bold mb-2" style={{ color: 'rgb(var(--color-foreground))' }}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-xs font-medium" style={{ color: 'rgb(var(--color-muted-foreground))' }}>{stat.title}</h3>
+              <HtmlTooltip title={stat.description}>
+                <button className="transition-colors hover:opacity-80" style={{ color: 'rgb(var(--color-muted-foreground))' }}>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
+              </HtmlTooltip>
+            </div>
+            <p className="text-lg font-bold" style={{ color: 'rgb(var(--color-foreground))' }}>
               {typeof stat.value === 'number' ? stat.value.toFixed(4) : stat.value}
             </p>
-            <p className="text-xs" style={{ color: 'rgb(var(--color-muted-foreground))' }}>{stat.description}</p>
           </div>
         </div>
       ))}

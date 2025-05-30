@@ -23,7 +23,7 @@ interface StockGraphProps {
 export const StockGraph: React.FC<StockGraphProps> = ({ data }) => {
   if (!data || data.length === 0) {
     return (
-      <div className="col-span-8 p-4 flex items-center justify-center">
+      <div className="col-span-8 h-full p-4 flex items-center justify-center overflow-hidden">
         <p style={{ color: 'rgb(var(--color-muted-foreground))' }}>No data available</p>
       </div>
     );
@@ -60,8 +60,8 @@ export const StockGraph: React.FC<StockGraphProps> = ({ data }) => {
   const yearTicks = getYearTicks();
 
   return (
-    <div className="col-span-8 p-4">
-      <div className="h-[525px]">
+    <div className="col-span-8 h-full p-4 overflow-hidden">
+      <div className="h-full max-h-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={data}

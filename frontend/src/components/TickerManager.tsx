@@ -6,9 +6,12 @@ interface TickerManagerProps {
   onTickerAdd: (ticker: string) => void;
   onSectorSelect: (sector: string) => void;
   onTickersChange: (tickers: string[]) => void;
+  onClearTickers: () => void;
+  onFindBestPair: () => void;
   initialTickers?: string[];
   clearTickers?: boolean;
   bestPairTickers?: string[];
+  isLoading?: boolean;
 }
 
 interface TickerValidation {
@@ -28,14 +31,16 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
   onTickerAdd,
   onSectorSelect,
   onTickersChange,
+  onClearTickers,
+  onFindBestPair,
   initialTickers = [],
   clearTickers = false,
   bestPairTickers = [],
+  isLoading = false,
 }) => {
   const [tickerInput, setTickerInput] = useState('');
   const [tickers, setTickers] = useState<string[]>(initialTickers);
   const [sectors, setSectors] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [selectedTickers, setSelectedTickers] = useState<string[]>([]);
 
   // Reset selected tickers when bestPairTickers changes
@@ -157,7 +162,6 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
 
   const handleSectorSelect = async (sector: string) => {
     debugLog('🏢 [TickerManager] Sector selected:', sector);
-    setIsLoading(true);
     try {
       debugLog('🌐 [TickerManager] Fetching tickers for sector:', sector);
       const response = await apiClient.get<SectorTickersResponse>(`/sectors/${sector}/tickers`);
@@ -173,7 +177,6 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
     } catch (error) {
       debugError('❌ [TickerManager] Failed to fetch tickers for sector', sector, ':', error);
     } finally {
-      setIsLoading(false);
       debugLog('✅ [TickerManager] Sector selection complete for:', sector);
     }
   };
@@ -209,37 +212,39 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
   };
 
   return (
-    <div className="col-span-4">
-      <div className="flex flex-col gap-4 h-[560px]">
+    <div className="col-span-4 h-full overflow-hidden">
+      <div className="flex flex-col gap-3 h-full max-h-full">
         {/* Ticker Input */}
-        <div className="grid grid-cols-10 gap-4">
-          <div className="col-span-7">
-            <input 
-              type="text" 
-              placeholder="Enter ticker symbol"
-              value={tickerInput}
-              onChange={(e) => setTickerInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="input h-10"
-            />
-          </div>
-          <div className="col-span-3">
-            <button 
-              onClick={handleAddTicker}
-              className="btn btn-success h-10"
-            >
-              Add Ticker
-            </button>
-          </div>
+        <div className="flex gap-4 flex-shrink-0">
+          <input 
+            type="text" 
+            placeholder="Enter ticker symbol"
+            value={tickerInput}
+            onChange={(e) => setTickerInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            className="input h-10 flex-1"
+          />
+          <button 
+            onClick={handleAddTicker}
+            className="btn btn-success h-10 w-32"
+          >
+            Add Ticker
+          </button>
+          <button 
+            onClick={onClearTickers}
+            className="btn btn-destructive h-10 w-32"
+          >
+            Clear Ticker List
+          </button>
         </div>
         
         {/* Ticker List */}
-        <div style={{ backgroundColor: 'rgb(var(--color-muted))', borderRadius: '0.375rem', padding: '1rem' }}>
-          <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-hidden" style={{ backgroundColor: 'rgb(var(--color-muted))', borderRadius: '0.375rem', padding: '1rem' }}>
+          <div className="flex flex-col gap-2 h-full overflow-y-auto">
             {tickers.map((ticker) => (
               <div 
                 key={ticker}
-                className={`px-4 py-2 rounded-md text-sm font-medium w-full flex items-center justify-between transition-colors ${
+                className={`px-4 py-1.5 rounded-md text-sm font-medium w-full flex items-center justify-between transition-colors flex-shrink-0 ${
                   selectedTickers.includes(ticker)
                     ? 'border-2'
                     : ''
@@ -264,8 +269,12 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
                 </button>
                 <button
                   onClick={() => handleRemoveTicker(ticker)}
-                  className="ml-2 transition-colors hover:opacity-80"
-                  style={{ color: 'rgb(var(--color-destructive))' }}
+                  className="ml-2 transition-colors hover:opacity-80 text-lg"
+                  style={{ 
+                    color: selectedTickers.includes(ticker)
+                      ? 'rgb(var(--color-success))'
+                      : 'rgb(var(--color-card-foreground))'
+                  }}
                 >
                   ×
                 </button>
@@ -275,16 +284,20 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
         </div>
         
         {/* Sector Buttons */}
-        <div style={{ backgroundColor: 'rgb(var(--color-muted))', borderRadius: '0.375rem', padding: '1rem' }}>
+        <div className="flex-shrink-0" style={{ backgroundColor: 'rgb(var(--color-muted))', borderRadius: '0.375rem', padding: '0.75rem' }}>
           <div className="grid grid-cols-2 gap-2">
             {sectors.map((sector) => (
               <button 
                 key={sector}
                 onClick={() => handleSectorSelect(sector)}
                 disabled={isLoading}
-                className={`btn btn-secondary text-sm ${
+                className={`px-3 py-1.5 rounded-md text-sm font-medium w-full transition-colors hover:opacity-80 ${
                   isLoading ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
+                style={{
+                  backgroundColor: 'rgb(var(--color-card))',
+                  color: 'rgb(var(--color-card-foreground))'
+                }}
               >
                 {sector}
               </button>
@@ -292,20 +305,38 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
           </div>
         </div>
 
-        {/* Run Metrics Button */}
-        <div style={{ backgroundColor: 'rgb(var(--color-muted))', borderRadius: '0.375rem', padding: '1rem' }}>
-          <button
-            className="btn btn-default w-full py-3"
-            disabled={selectedTickers.length !== 2}
-            onClick={() => {
-              debugLog('Run Metrics clicked:', {
-                bestPairTickers,
-                selectedTickers
-              });
-            }}
-          >
-            Run Metrics on Selected Pair
-          </button>
+        {/* Action Buttons */}
+        <div className="flex-shrink-0" style={{borderRadius: '0.375rem', padding: '0.5rem' }}>
+          <div className="flex items-center justify-center gap-4">
+            <button
+              className="btn btn-success py-3 flex-1 text-lg"
+              disabled={selectedTickers.length !== 2}
+              onClick={() => {
+                debugLog('Run Metrics clicked:', {
+                  bestPairTickers,
+                  selectedTickers
+                });
+              }}
+            >
+              Run Metrics on Selected Pair
+            </button>
+            <button 
+              onClick={onFindBestPair}
+              disabled={isLoading || tickers.length < 2}
+              className={`btn btn-default py-3 flex-1 text-lg ${
+                isLoading || tickers.length < 2
+                  ? 'opacity-50 cursor-not-allowed'
+                  : ''
+              }`}
+              style={{
+                backgroundColor: 'transparent',
+                border: '2px solid rgb(var(--color-success))',
+                color: 'rgb(var(--color-success))'
+              }}
+            >
+              {isLoading ? 'Loading...' : 'Find Best Cointegrated Pair'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
