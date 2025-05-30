@@ -9,7 +9,7 @@ interface TickerManagerProps {
   onClearTickers: () => void;
   onFindBestPair: () => void;
   initialTickers?: string[];
-  clearTickers?: boolean;
+  clearTickers?: number;
   bestPairTickers?: string[];
   isLoading?: boolean;
 }
@@ -34,7 +34,7 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
   onClearTickers,
   onFindBestPair,
   initialTickers = [],
-  clearTickers = false,
+  clearTickers = 0,
   bestPairTickers = [],
   isLoading = false,
 }) => {
@@ -63,7 +63,7 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
       currentTickers: tickers.length,
       tickersList: tickers
     });
-    if (clearTickers) {
+    if (clearTickers > 0) {
       debugLog('🧹 [TickerManager] Clearing all tickers and selections');
       setTickers([]);
       setSelectedTickers([]);

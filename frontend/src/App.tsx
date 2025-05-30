@@ -68,7 +68,7 @@ function App() {
   const [defaultTickers, setDefaultTickers] = useState<string[]>([])
   const [chartData, setChartData] = useState<ChartDataPoint[] | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [clearTickers, setClearTickers] = useState(false)
+  const [clearTickers, setClearTickers] = useState(0)
   const [prevStartDate, setPrevStartDate] = useState('')
   const [prevEndDate, setPrevEndDate] = useState('')
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false)
@@ -309,7 +309,7 @@ function App() {
     setCurrentTickers([]);
     setChartData(null);
     setDisplayedTickers([]);
-    setClearTickers(true);
+    setClearTickers(prev => prev + 1);
     debugLog('✅ [App] Clear operation complete');
   };
 
