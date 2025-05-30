@@ -23,8 +23,8 @@ interface StockGraphProps {
 export const StockGraph: React.FC<StockGraphProps> = ({ data }) => {
   if (!data || data.length === 0) {
     return (
-      <div className="col-span-8 bg-white rounded-lg shadow p-4 flex items-center justify-center">
-        <p className="text-gray-500">No data available</p>
+      <div className="col-span-8 p-4 flex items-center justify-center">
+        <p style={{ color: 'rgb(var(--color-muted-foreground))' }}>No data available</p>
       </div>
     );
   }
@@ -32,12 +32,36 @@ export const StockGraph: React.FC<StockGraphProps> = ({ data }) => {
   // Get all ticker columns (excluding 'date')
   const tickers = Object.keys(data[0]).filter(key => key !== 'date');
   
-  // Define colors for each ticker
-  const colors = ['#2563eb', '#dc2626']; // Blue and Red
+  // Define colors for each ticker using theme colors
+  const colors = ['rgb(var(--color-chart-1))', 'rgb(var(--color-chart-2))'];
+
+  // Get unique years from the data and create custom ticks
+  const getYearTicks = () => {
+    const years = new Set<string>();
+    const yearTicks: string[] = [];
+    
+    data.forEach(point => {
+      const date = new Date(point.date);
+      const year = date.getFullYear().toString();
+      
+      if (!years.has(year)) {
+        years.add(year);
+        // Find the first date of this year in the dataset
+        const yearStart = data.find(d => new Date(d.date).getFullYear().toString() === year);
+        if (yearStart) {
+          yearTicks.push(yearStart.date);
+        }
+      }
+    });
+    
+    return yearTicks;
+  };
+
+  const yearTicks = getYearTicks();
 
   return (
-    <div className="col-span-8 bg-white rounded-lg shadow p-4">
-      <div className="h-[400px]">
+    <div className="col-span-8 p-4">
+      <div className="h-[525px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={data}
@@ -48,22 +72,36 @@ export const StockGraph: React.FC<StockGraphProps> = ({ data }) => {
               bottom: 5,
             }}
           >
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--color-border))" />
             <XAxis 
               dataKey="date" 
-              tick={{ fontSize: 12 }}
-              tickFormatter={(value: string) => {
-                const date = new Date(value);
-                return date.toLocaleDateString();
+              tick={{ fontSize: 12, fill: 'rgb(var(--color-muted-foreground))' }}
+              tickFormatter={(dateString: string) => {
+                const date = new Date(dateString);
+                return date.getFullYear().toString();
               }}
+              ticks={yearTicks}
             />
             <YAxis 
-              tick={{ fontSize: 12 }}
-              tickFormatter={(value: number) => `$${value.toFixed(2)}`}
+              tick={{ fontSize: 12, fill: 'rgb(var(--color-muted-foreground))' }}
+              tickFormatter={(value: number) => value.toFixed(2)}
+              label={{ 
+                value: 'Adj Close ($)', 
+                angle: -90, 
+                position: 'insideLeft',
+                offset: -10,
+                style: { textAnchor: 'middle', fill: 'rgb(var(--color-muted-foreground))' }
+              }}
             />
             <Tooltip
               formatter={(value: number) => [`$${value.toFixed(2)}`, '']}
               labelFormatter={(label: string) => new Date(label).toLocaleDateString()}
+              contentStyle={{
+                backgroundColor: 'rgb(var(--color-card))',
+                border: '1px solid rgb(var(--color-border))',
+                borderRadius: '0.375rem',
+                color: 'rgb(var(--color-card-foreground))'
+              }}
             />
             <Legend />
             {tickers.map((ticker, index) => (

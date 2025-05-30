@@ -209,24 +209,24 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
   };
 
   return (
-    <div className="col-span-4 bg-white rounded-lg shadow p-4">
-      <div className="grid grid-rows-3 gap-4 h-full">
+    <div className="col-span-4">
+      <div className="flex flex-col gap-4 h-[560px]">
         {/* Ticker Input */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-gray-100 rounded p-4">
+        <div className="grid grid-cols-10 gap-4">
+          <div className="col-span-7">
             <input 
               type="text" 
               placeholder="Enter ticker symbol"
               value={tickerInput}
               onChange={(e) => setTickerInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="input h-10"
             />
           </div>
-          <div className="bg-gray-100 rounded p-4">
+          <div className="col-span-3">
             <button 
               onClick={handleAddTicker}
-              className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
+              className="btn btn-success h-10"
             >
               Add Ticker
             </button>
@@ -234,30 +234,38 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
         </div>
         
         {/* Ticker List */}
-        <div className="bg-gray-100 rounded p-4">
-          <div className="flex flex-col gap-2">
+        <div style={{ backgroundColor: 'rgb(var(--color-muted))', borderRadius: '0.375rem', padding: '1rem' }}>
+          <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
             {tickers.map((ticker) => (
               <div 
                 key={ticker}
-                className={`px-4 py-2 rounded-md text-sm font-medium w-full flex items-center justify-between ${
+                className={`px-4 py-2 rounded-md text-sm font-medium w-full flex items-center justify-between transition-colors ${
                   selectedTickers.includes(ticker)
-                    ? 'bg-green-100 text-green-800 border-2 border-green-500'
-                    : 'bg-blue-100 text-blue-800'
+                    ? 'border-2'
+                    : ''
                 }`}
+                style={{
+                  backgroundColor: selectedTickers.includes(ticker) 
+                    ? 'rgb(var(--color-success) / 0.1)' 
+                    : 'rgb(var(--color-card))',
+                  color: selectedTickers.includes(ticker)
+                    ? 'rgb(var(--color-success))'
+                    : 'rgb(var(--color-card-foreground))',
+                  borderColor: selectedTickers.includes(ticker) 
+                    ? 'rgb(var(--color-success))' 
+                    : 'transparent'
+                }}
               >
                 <button
-                  className={`flex-1 text-left transition-colors ${
-                    selectedTickers.includes(ticker)
-                      ? 'hover:text-green-900'
-                      : 'hover:text-blue-900'
-                  }`}
+                  className="flex-1 text-left transition-colors hover:opacity-80"
                   onClick={() => handleTickerClick(ticker)}
                 >
                   {ticker}
                 </button>
                 <button
                   onClick={() => handleRemoveTicker(ticker)}
-                  className="text-red-600 hover:text-red-800 transition-colors ml-2"
+                  className="ml-2 transition-colors hover:opacity-80"
+                  style={{ color: 'rgb(var(--color-destructive))' }}
                 >
                   ×
                 </button>
@@ -267,14 +275,14 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
         </div>
         
         {/* Sector Buttons */}
-        <div className="bg-gray-100 rounded p-4">
+        <div style={{ backgroundColor: 'rgb(var(--color-muted))', borderRadius: '0.375rem', padding: '1rem' }}>
           <div className="grid grid-cols-2 gap-2">
             {sectors.map((sector) => (
               <button 
                 key={sector}
                 onClick={() => handleSectorSelect(sector)}
                 disabled={isLoading}
-                className={`bg-purple-100 text-purple-800 px-3 py-2 rounded-md hover:bg-purple-200 transition-colors ${
+                className={`btn btn-secondary text-sm ${
                   isLoading ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
@@ -285,9 +293,9 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
         </div>
 
         {/* Run Metrics Button */}
-        <div className="bg-gray-100 rounded p-4">
+        <div style={{ backgroundColor: 'rgb(var(--color-muted))', borderRadius: '0.375rem', padding: '1rem' }}>
           <button
-            className="w-full bg-indigo-600 text-white py-3 px-4 rounded-md hover:bg-indigo-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="btn btn-default w-full py-3"
             disabled={selectedTickers.length !== 2}
             onClick={() => {
               debugLog('Run Metrics clicked:', {

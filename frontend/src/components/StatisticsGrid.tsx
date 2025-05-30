@@ -50,12 +50,18 @@ const StatisticCard: React.FC<StatisticProps> = ({ id, title, value, description
 
 export const StatisticsGrid: React.FC<StatisticsGridProps> = ({ statistics }) => {
   return (
-    <div className="col-span-12 bg-white rounded-lg shadow p-4">
-      <div className="grid grid-cols-6 gap-4">
-        {statistics.map((stat) => (
-          <StatisticCard key={stat.id} {...stat} />
-        ))}
-      </div>
+    <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {statistics.map((stat) => (
+        <div key={stat.id} className="card p-4">
+          <div className="flex flex-col">
+            <h3 className="text-sm font-medium mb-1" style={{ color: 'rgb(var(--color-muted-foreground))' }}>{stat.title}</h3>
+            <p className="text-2xl font-bold mb-2" style={{ color: 'rgb(var(--color-foreground))' }}>
+              {typeof stat.value === 'number' ? stat.value.toFixed(4) : stat.value}
+            </p>
+            <p className="text-xs" style={{ color: 'rgb(var(--color-muted-foreground))' }}>{stat.description}</p>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }; 

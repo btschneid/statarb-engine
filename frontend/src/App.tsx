@@ -3,6 +3,7 @@ import { DateRangeSelector } from './components/DateRangeSelector'
 import { TickerManager } from './components/TickerManager'
 import { StockGraph } from './components/StockGraph'
 import { StatisticsGrid } from './components/StatisticsGrid'
+import { ThemeToggle } from './components/ThemeToggle'
 import apiClient from './services/api'
 import { debugLog, debugError } from './utils/debug'
 
@@ -312,11 +313,16 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen p-4" style={{ backgroundColor: 'rgb(var(--color-background))' }}>
+      {/* Fixed Theme Toggle - Top Right */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
       {/* Main Grid Container */}
-      <div className="grid grid-cols-12 gap-4">
+      <div className="grid grid-cols-12 gap-2">
         {/* Row 1 */}
-        <div className="col-span-12 grid grid-cols-12 gap-4 mb-4">
+        <div className="col-span-12 grid grid-cols-12 mb-2 card p-6">
           <DateRangeSelector 
             startDate={startDate}
             endDate={endDate}
@@ -325,29 +331,31 @@ function App() {
           />
 
           {/* Title */}
-          <div className="col-span-4 flex items-center justify-center">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Risk Engine Simulator
-            </h1>
+          <div className="col-span-4 h-full">
+            <div className="h-full flex items-center justify-center">
+              <h1 className="text-5xl font-bold" style={{ color: 'rgb(var(--color-foreground))' }}>
+                Risk Engine Simulator
+              </h1>
+            </div>
           </div>
 
           {/* Buttons Container */}
-          <div className="col-span-4 bg-white rounded-lg shadow p-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-4 h-full flex items-center">
+            <div className="grid grid-cols-2 gap-4 w-full">
               <button 
                 onClick={handleFindBestPair}
                 disabled={isLoading || currentTickers.length < 2}
-                className={`w-full py-3 px-4 rounded-md transition-colors ${
+                className={`btn btn-default ${
                   isLoading || currentTickers.length < 2
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    ? 'opacity-50 cursor-not-allowed'
+                    : ''
                 }`}
               >
                 {isLoading ? 'Loading...' : 'Find Best Cointegrated Pair'}
               </button>
               <button 
                 onClick={handleClearTickers}
-                className="w-full py-3 px-4 rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors"
+                className="btn btn-destructive"
               >
                 Clear Ticker List
               </button>
@@ -356,7 +364,7 @@ function App() {
         </div>
 
         {/* Row 2 */}
-        <div className="col-span-12 grid grid-cols-12 gap-4 mb-4">
+        <div className="col-span-12 grid grid-cols-12 gap-4 mb-2 card p-6">
           <StockGraph data={chartData} />
           <TickerManager 
             onTickerAdd={handleTickerAdd}
