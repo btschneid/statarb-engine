@@ -3,6 +3,7 @@ import { styled } from '@mui/material/styles';
 import Tooltip from '@mui/material/Tooltip';
 import type { TooltipProps } from '@mui/material/Tooltip';
 import { tooltipClasses } from '@mui/material/Tooltip';
+import MetricDescription from './MetricDescription';
 
 interface StatisticProps {
   id: string;
@@ -19,13 +20,14 @@ const HtmlTooltip = styled(({ className, ...props }: TooltipProps) => (
   <Tooltip {...props} classes={{ popper: className }} />
 ))(() => ({
   [`& .${tooltipClasses.tooltip}`]: {
-    backgroundColor: '#f5f5f9',
-    color: 'rgba(0, 0, 0, 0.87)',
-    maxWidth: 300,
-    fontSize: '0.75rem',
-    border: '1px solid #dadde9',
-    padding: '12px 16px',
-    lineHeight: '1.4',
+    backgroundColor: 'rgb(var(--color-background))',
+    maxWidth: 500,
+    fontSize: '0.875rem',
+    border: '1px solid rgb(var(--color-border))',
+    padding: '20px 24px',
+    lineHeight: '1.5',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
   },
 }));
 
@@ -59,7 +61,7 @@ export const StatisticsGrid: React.FC<StatisticsGridProps> = ({ statistics }) =>
               <h3 className="text-xs font-medium" style={{ color: 'rgb(var(--color-muted-foreground))' }}>{stat.title}</h3>
               <HtmlTooltip 
                 title={
-                  <div dangerouslySetInnerHTML={{ __html: stat.description }} />
+                  <MetricDescription description={stat.description} />
                 }
               >
                 <button className="transition-colors hover:opacity-80" style={{ color: 'rgb(var(--color-muted-foreground))' }}>

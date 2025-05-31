@@ -424,7 +424,7 @@ function App() {
           onClick={handleCloseHelpModal}
         >
           <div 
-            className="relative mx-4 max-w-2xl w-full max-h-[80vh] overflow-auto rounded-lg shadow-2xl"
+            className="relative mx-4 max-w-4xl w-full max-h-[80vh] overflow-auto rounded-lg shadow-2xl"
             style={{ 
               backgroundColor: 'rgb(var(--color-background))',
               border: '1px solid rgb(var(--color-border))'
@@ -459,98 +459,226 @@ function App() {
                 {/* Introduction */}
                 <div>
                   <h3 
-                    className="text-lg font-semibold mb-3"
+                    className="text-xl font-semibold mb-3"
                     style={{ color: 'rgb(var(--color-foreground))' }}
                   >
-                    Welcome to the Risk Engine Simulator
+                    Welcome to the Pair Trading & Cointegration Analyzer
                   </h3>
                   <p 
-                    className="text-sm leading-relaxed"
+                    className="text-base leading-relaxed"
                     style={{ color: 'rgb(var(--color-muted-foreground))' }}
                   >
-                    This dashboard is designed to test the risk metrics of cointegrated pairs for arbitrage trading strategies in finance. 
-                    Analyze historical data, evaluate pair relationships, and assess risk metrics to make informed trading decisions.
+                    This dashboard analyzes <strong>cointegrated pairs</strong> of stocks for <strong>statistical arbitrage</strong> trading strategies. 
+                    Learn how to identify when two stocks move together in a predictable way and profit from temporary deviations.
                   </p>
                 </div>
 
-                {/* How to Use Tickers */}
+                {/* What is Cointegration */}
                 <div>
                   <h4 
-                    className="text-md font-semibold mb-2"
+                    className="text-lg font-semibold mb-2"
                     style={{ color: 'rgb(var(--color-foreground))' }}
                   >
-                    Working with Ticker Pairs
+                    🔗 What is Cointegration?
                   </h4>
-                  <ul 
-                    className="text-sm space-y-2 list-disc list-inside"
+                  <div 
+                    className="text-base leading-relaxed space-y-2"
                     style={{ color: 'rgb(var(--color-muted-foreground))' }}
                   >
-                    <li><strong>Manual Selection:</strong> Choose any two tickers from your list to analyze their relationship</li>
-                    <li><strong>Find Best Pair:</strong> Let the algorithm automatically identify the most cointegrated pair from your ticker list</li>
-                    <li><strong>Add Custom Tickers:</strong> Expand your analysis by adding your own ticker symbols to the list</li>
-                  </ul>
+                    <p>
+                      <strong>Cointegration</strong> occurs when two stocks move together over the long term, even though their individual prices may wander around. 
+                      Think of it like two people walking their dogs on leashes connected by an elastic band:
+                    </p>
+                    <div 
+                      className="p-3 rounded-lg"
+                      style={{ 
+                        backgroundColor: 'rgb(var(--color-muted) / 0.1)',
+                        border: '1px solid rgb(var(--color-border))'
+                      }}
+                    >
+                      <p className="text-sm">
+                        🚶‍♂️---🔗---🚶‍♀️<br/>
+                        <strong>Analogy:</strong> The people (stocks) can drift apart temporarily, but the elastic band (economic relationship) 
+                        always pulls them back together. The further apart they get, the stronger the pull back becomes.
+                      </p>
+                    </div>
+                    <p>
+                      <strong>Examples of cointegrated pairs:</strong>
+                    </p>
+                    <ul className="list-disc list-inside ml-2 space-y-1">
+                      <li>McDonald's & Burger King (same industry, similar business models)</li>
+                      <li>Coca-Cola & PepsiCo (direct competitors)</li>
+                      <li>Gold mining stocks (all affected by gold prices)</li>
+                    </ul>
+                  </div>
                 </div>
 
-                {/* Date Range */}
+                {/* The Arbitrage Opportunity */}
                 <div>
                   <h4 
-                    className="text-md font-semibold mb-2"
+                    className="text-lg font-semibold mb-2"
                     style={{ color: 'rgb(var(--color-foreground))' }}
                   >
-                    Date Range Selection
+                    💰 The Arbitrage Opportunity
                   </h4>
-                  <p 
-                    className="text-sm leading-relaxed"
+                  <div 
+                    className="text-base leading-relaxed space-y-2"
                     style={{ color: 'rgb(var(--color-muted-foreground))' }}
                   >
-                    Use the date selectors in the top left to specify your analysis period. The chart will display historical 
-                    adjusted close data for your selected ticker pair within this timeframe.
-                  </p>
+                    <p>
+                      <strong>Statistical arbitrage</strong> exploits temporary mispricings between cointegrated stocks. Here's how:
+                    </p>
+                    
+                    <div 
+                      className="p-4 rounded-lg space-y-3"
+                      style={{ 
+                        backgroundColor: 'rgb(var(--color-muted) / 0.1)',
+                        border: '1px solid rgb(var(--color-border))'
+                      }}
+                    >
+                      <div>
+                        <strong>📈 Step 1: Calculate the "Spread"</strong>
+                        <p className="text-sm mt-1">
+                          Spread = Stock A Price - (Hedge Ratio × Stock B Price)<br/>
+                          The hedge ratio tells us how many shares of B to short for each share of A we buy.
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <strong>📊 Step 2: Monitor Spread Deviations</strong>
+                        <p className="text-sm mt-1">
+                          Normally: Spread ≈ Historical Average ± Small Fluctuation<br/>
+                          Opportunity: Spread = Way Above or Below Average (2+ standard deviations)
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <strong>🎯 Step 3: Execute the Trade</strong>
+                        <div className="text-sm mt-1 space-y-1">
+                          <p><strong>When spread is HIGH:</strong> Stock A is "expensive" relative to B</p>
+                          <p>→ SHORT Stock A, BUY Stock B (bet the spread will decrease)</p>
+                          <p><strong>When spread is LOW:</strong> Stock A is "cheap" relative to B</p>
+                          <p>→ BUY Stock A, SHORT Stock B (bet the spread will increase)</p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <strong>💸 Step 4: Profit from Mean Reversion</strong>
+                        <p className="text-sm mt-1">
+                          As the spread returns to its historical average, you profit from the convergence. 
+                          Close both positions when the spread normalizes.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Metrics */}
+                {/* Visual Process Example */}
                 <div>
                   <h4 
-                    className="text-md font-semibold mb-2"
+                    className="text-lg font-semibold mb-2"
                     style={{ color: 'rgb(var(--color-foreground))' }}
                   >
-                    Risk Metrics Analysis
+                    📈 Visual Example: KO vs PEP
                   </h4>
-                  <p 
-                    className="text-sm leading-relaxed mb-2"
-                    style={{ color: 'rgb(var(--color-muted-foreground))' }}
+                  <div 
+                    className="p-4 rounded-lg"
+                    style={{ 
+                      backgroundColor: 'rgb(var(--color-muted) / 0.1)',
+                      border: '1px solid rgb(var(--color-border))'
+                    }}
                   >
-                    After selecting a pair (either manually or through "Find Best Pair"), you need to click the 
-                    <strong> "Run Metrics on Selected Pair"</strong> button to calculate and populate the comprehensive 
-                    risk metrics displayed at the bottom of the dashboard.
-                  </p>
-                  <p 
-                    className="text-sm leading-relaxed"
-                    style={{ color: 'rgb(var(--color-muted-foreground))' }}
-                  >
-                    <strong>💡 Tip:</strong> Hover over the info icon (ⓘ) next to any metric to see a detailed explanation of what it measures.
-                  </p>
+                    <div className="text-sm space-y-2" style={{ color: 'rgb(var(--color-muted-foreground))' }}>
+                      <div>
+                        <strong>Timeline Visualization:</strong>
+                      </div>
+                      <div className="font-mono text-sm">
+                        Time:    Jan    Feb    Mar    Apr    May<br/>
+                        KO:      $60 → $62 → $58 → $61 → $60<br/>
+                        PEP:     $65 → $64 → $66 → $63 → $65<br/>
+                        Spread:   -5  →  -2  →  -8  →  -2  →  -5
+                      </div>
+                      <div>
+                        <strong>🔥 Trading Opportunity in March:</strong><br/>
+                        • Spread = -8 (way below normal -5)<br/>
+                        • Action: BUY KO, SHORT PEP<br/>
+                        • Reasoning: KO is unusually cheap vs PEP<br/>
+                        • Result: In April, spread reverts to -2, you profit!
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Getting Started */}
+                {/* Key Metrics Explained */}
                 <div>
                   <h4 
-                    className="text-md font-semibold mb-2"
+                    className="text-lg font-semibold mb-2"
                     style={{ color: 'rgb(var(--color-foreground))' }}
                   >
-                    Quick Start Guide
+                    🔍 Key Metrics to Watch
+                  </h4>
+                  <div 
+                    className="text-base space-y-2"
+                    style={{ color: 'rgb(var(--color-muted-foreground))' }}
+                  >
+                    <div>
+                      <strong>• Cointegration P-Value:</strong> &lt; 0.05 = Strong cointegration (good for trading)
+                    </div>
+                    <div>
+                      <strong>• Spread Z-Score:</strong> ±2 or higher = Trading signal (spread is far from mean)
+                    </div>
+                    <div>
+                      <strong>• Half-Life:</strong> How many days for spread to revert halfway (shorter = better)
+                    </div>
+                    <div>
+                      <strong>• Hedge Ratio:</strong> How many shares of stock B to trade per share of stock A
+                    </div>
+                  </div>
+                </div>
+
+                {/* How to Use This Tool */}
+                <div>
+                  <h4 
+                    className="text-lg font-semibold mb-2"
+                    style={{ color: 'rgb(var(--color-foreground))' }}
+                  >
+                    🛠️ How to Use This Dashboard
                   </h4>
                   <ol 
-                    className="text-sm space-y-1 list-decimal list-inside"
+                    className="text-base space-y-1 list-decimal list-inside"
                     style={{ color: 'rgb(var(--color-muted-foreground))' }}
                   >
-                    <li>Set your desired date range using the date selectors</li>
-                    <li>Add tickers or use the default list provided</li>
-                    <li>Either select two tickers manually or click "Find Best Pair"</li>
-                    <li>Click "Run Metrics on Selected Pair" to calculate risk metrics</li>
-                    <li>Review the chart data and populated risk metrics below</li>
-                    <li>Hover over metric info icons for detailed explanations</li>
+                    <li>Set your analysis period using the date selectors</li>
+                    <li>Add tickers or use the default sector-based lists</li>
+                    <li><strong>Find Best Pair:</strong> Algorithm identifies the most cointegrated pair</li>
+                    <li><strong>Or manually select</strong> two tickers to analyze</li>
+                    <li><strong>Run Metrics:</strong> Calculate all risk and cointegration metrics</li>
+                    <li><strong>Analyze results:</strong> Look for low p-values, reasonable half-life, good Sharpe ratios</li>
+                    <li><strong>Monitor Z-Score:</strong> Values beyond ±2 indicate potential trading opportunities</li>
                   </ol>
+                </div>
+
+                {/* Risk Warning */}
+                <div 
+                  className="p-4 rounded-lg"
+                  style={{ 
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    border: '1px solid rgba(255, 193, 7, 0.3)'
+                  }}
+                >
+                  <div className="flex items-start space-x-2">
+                    <span className="text-yellow-600 mt-0.5">⚠️</span>
+                    <div>
+                      <h5 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-1">Risk Disclaimer</h5>
+                      <p 
+                        className="text-sm leading-relaxed text-yellow-700 dark:text-yellow-300"
+                      >
+                        <strong>This is for educational purposes only.</strong> Pair trading involves significant risks including:
+                        model breakdown, execution risk, and market volatility. Cointegration relationships can disappear over time.
+                        Always conduct thorough research and consider your risk tolerance before trading.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* GitHub Reference */}
@@ -562,11 +690,11 @@ function App() {
                   }}
                 >
                   <p 
-                    className="text-sm"
+                    className="text-base"
                     style={{ color: 'rgb(var(--color-muted-foreground))' }}
                   >
-                    <strong>Want to learn more?</strong> Check out the GitHub repository (button in top-right) for detailed information 
-                    on how this Risk Engine Simulator was built, including the algorithms and methodologies used.
+                    <strong>🔗 Want to dive deeper?</strong> Check out the GitHub repository (button in top-right) for the complete 
+                    mathematical implementation, including OLS regression, ADF tests, and all 18 risk metrics calculations.
                   </p>
                 </div>
               </div>
