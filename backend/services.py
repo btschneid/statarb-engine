@@ -6,7 +6,8 @@ from config import (
     DEFAULT_START_DATE, DEFAULT_END_DATE,
     DEFAULT_TICKERS, DEFAULT_SECTOR, METRICS
 )
-from statsmodels.tsa.stattools import coint
+from statsmodels.tsa.stattools import coint, adfuller
+import statsmodels.api as sm
 from datetime import datetime, timedelta
 import logging
 
@@ -43,28 +44,56 @@ def get_sector_tickers(sector: str) -> List[str]:
         return []
     return DEFAULT_TICKERS[sector]
 
-def calculate_risk_metrics(df: pd.DataFrame) -> Dict[str, float]:
+def calculate_risk_metrics(df: pd.DataFrame, tickers: List[str]) -> Dict[str, float]:
     """Calculate risk metrics for the given ticker data"""
+
+    ticker_1, ticker_2 = tickers
+
+    s1, s2 = df[ticker_1], df[ticker_2]
+
+    # Hedge Ratio
+    X = sm.add_constant(s2)
+    model = sm.OLS(s1, X).fit()
+    hedge_ratio = model.params.iloc[1]
+
+    # Spread
+    spread = s1 - (hedge_ratio * s2)
+
+    # Coint Test
+    coint_stat, coint_pval, _ = coint(s1, s2)
+
+    # ADF test on the spread
+    adf_result = adfuller(spread)
+    spread_adf_stat, spread_adf_pval = adf_result[0], adf_result[1]
+
     # Placeholder implementation
     return {
-        "spread_cumulative_return": 0.0,
-        "spread_annualized_return": 0.0,
-        "spread_sharpe_ratio": 0.0,
-        "spread_sortino_ratio": 0.0,
-        "spread_calmar_ratio": 0.0,
-        "spread_max_drawdown": 0.0,
-        "spread_var_95": 0.0,
-        "spread_cvar_95": 0.0,
-        "spread_profit_factor": 0.0,
-        "spread_mae": 0.0,
-        "cointegration_adf_stat": 0.0,
-        "cointegration_p_value": 0.05,
-        "hedge_ratio": 0.0,
-        "mean_reversion_half_life_days": 0.0,
+        # Row 1: Relationship & Stationarity
+        "hedge_ratio": hedge_ratio,
+        "cointegration_adf_stat": coint_stat,
+        "cointegration_p_value": coint_pval,
+        "spread_adf_stat": spread_adf_stat,
+        "spread_adf_p_value": spread_adf_pval,
+        "mean_reversion_half_life_days": 0,
+        "spread_std_dev": 0,
+
+        # Row 2: Spread Performance & Risk Metrics
+        "spread_z_score": 0,
+        "spread_cumulative_return": 0,
+        "spread_annualized_return": 0,
+        "spread_sharpe_ratio": 0,
+        "spread_sortino_ratio": 0,
+        "spread_calmar_ratio": 0,
+        "spread_max_drawdown": 0,
+
+        # Row 3: Trade Stats & Tail Risk
+        "spread_var_95": 0,
+        "spread_cvar_95": 0,
+        "spread_profit_factor": 0,
+        "spread_mae": 0,
         "num_trades": 0,
-        "win_rate": 0.0,
-        "mean_trade_duration_days": 0.0,
-        "spread_z_score": 0.0
+        "win_rate": 0,
+        "mean_trade_duration_days": 0
     }
 
 def get_ticker_data(tickers: List[str], start_date: str, end_date: str) -> pd.DataFrame:
@@ -116,6 +145,169 @@ def get_default_sector_tickers():
 def get_metrics():
     """Get list of all metrics with their metadata"""
     return [
+        # ROW 1: Relationship & Stationarity
+        {
+            "id": "hedge_ratio",
+            "title": "Hedge Ratio",
+            "decimal_places": 3,
+            "unit_type": "number",
+            "unit_symbol": "",
+            "description": (
+                "Definition: This number tells you: 'For every 1 share of the first stock I buy, how many shares of the second stock should I sell to create a balanced pair?' It's like a recipe ratio - 1 cup flour needs 0.5 cups milk."
+                "<br><br>"
+                "Formula: \\text{spread} = \\text{ticker}_1 - \\text{hedge ratio} \\times \\text{ticker}_2<br>"
+                "Obtained from OLS: hedge_ratio = slope of regression(ticker₁ ~ ticker₂)"
+                "<br><br>"
+                "Context: If Coca-Cola costs $50 and Pepsi costs $100, but historically Coke moves twice as much as Pepsi, your hedge ratio might be 0.5. This means: buy 1 share of Coke ($50) and sell 0.5 shares of Pepsi ($50), creating a balanced $0 net position that profits from their relative movements."
+                "<br><br>"
+                "Interpretation:"
+                "• 0.8 = for every 1 share of stock A you buy, sell 0.8 shares of stock B"
+                "• 1.2 = for every 1 share of stock A you buy, sell 1.2 shares of stock B"
+                "• The goal is to make your total position value roughly neutral to market movements"
+            )
+        },
+        {
+            "id": "cointegration_adf_stat",
+            "title": "Cointegration ADF Stat",
+            "decimal_places": 3,
+            "unit_type": "number",
+            "unit_symbol": "",
+            "description": (
+                "Definition: This is a statistical test that answers: 'Are these two stocks actually connected in a predictable way, or am I just imagining a pattern?' The ADF (Augmented Dickey-Fuller) test checks if the price difference between two stocks behaves predictably over time."
+                "<br><br>"
+                "Formula: \\Delta y_t = \\alpha + \\beta \\cdot t + \\gamma \\cdot y_{t-1} + \\sum_{i=1}^{p} \\delta_i \\cdot \\Delta y_{t-i} + \\epsilon_t<br>"
+                "Test statistic = γ / SE(γ)"
+                "<br><br>"
+                "Context: Think of two friends walking dogs connected by an elastic leash. Sometimes one dog runs ahead, but the leash pulls them back together. The ADF test checks if your two stocks behave like those dogs - when one gets 'too far' from the other, do they reliably come back together?"
+                "<br><br>"
+                "Interpretation:"
+                "• -4.0 or more negative = excellent - very strong statistical relationship"
+                "• -3.5 to -4.0 = good - solid evidence of connection"
+                "• -3.0 to -3.5 = moderate - some evidence but not bulletproof"
+                "• Above -3.0 = weak - the stocks might not actually be connected"
+            )
+        },
+        {
+            "id": "cointegration_p_value",
+            "title": "Cointegration P-Value",
+            "decimal_places": 4,
+            "unit_type": "number",
+            "unit_symbol": "",
+            "description": (
+                "Definition: This number answers: 'What's the probability that I'm wrong about these two stocks being connected?' It's like a confidence score for your pair trading strategy. Lower numbers mean you can be more confident the relationship is real, not just random chance."
+                "<br><br>"
+                "Formula: P\\left(|t| > |\\text{ADF stat}|\\right) \\text{ under null hypothesis of unit root}"
+                "<br><br>"
+                "Context: Scientists use p-values to decide if their discoveries are real or just lucky coincidences. In finance, we use the same idea. A p-value of 0.03 means there's only a 3% chance you're seeing a fake pattern. It's like a weather forecast - 97% chance of rain means you should probably bring an umbrella."
+                "<br><br>"
+                "Interpretation:"
+                "• Below 0.01 = extremely confident - less than 1% chance you're wrong"
+                "• 0.01-0.05 = confident - less than 5% chance you're wrong (industry standard)"
+                "• 0.05-0.10 = moderate confidence - some risk you're seeing things that aren't there"
+                "• Above 0.10 = weak confidence - too risky to trust this relationship"
+            )
+        },
+        {
+            "id": "spread_adf_stat",
+            "title": "Spread ADF Stat",
+            "decimal_places": 3,
+            "unit_type": "number",
+            "unit_symbol": "",
+            "description": (
+                "Definition: This tests if the spread (price difference) itself is stationary, meaning it has a tendency to revert to its mean over time. It's like testing if a rubber band stretched away from its natural position will snap back."
+                "<br><br>"
+                "Formula: Applied to the spread: spread = price₁ - hedge_ratio × price₂"
+                "<br><br>"
+                "Context: Even if two stocks are cointegrated, you want to make sure their spread behaves predictably on its own. This test confirms that the spread doesn't just wander randomly but actually reverts to a mean value."
+                "<br><br>"
+                "Interpretation:"
+                "• -4.0 or more negative = excellent - spread reliably reverts to mean"
+                "• -3.5 to -4.0 = good - solid mean reversion behavior"
+                "• -3.0 to -3.5 = moderate - some mean reversion tendency"
+                "• Above -3.0 = weak - spread might not be predictable enough for trading"
+            )
+        },
+        {
+            "id": "spread_adf_p_value",
+            "title": "Spread ADF P-Value",
+            "decimal_places": 4,
+            "unit_type": "number",
+            "unit_symbol": "",
+            "description": (
+                "Definition: This is the confidence level for the spread stationarity test. It tells you: 'How confident can I be that this spread actually reverts to its mean rather than just wandering randomly?'"
+                "<br><br>"
+                "Context: Lower p-values mean higher confidence that the spread is stationary and will revert to its mean, making it more predictable for trading strategies."
+                "<br><br>"
+                "Interpretation:"
+                "• Below 0.01 = extremely confident - spread is highly predictable"
+                "• 0.01-0.05 = confident - spread shows reliable mean reversion"
+                "• 0.05-0.10 = moderate confidence - some predictability but be cautious"
+                "• Above 0.10 = weak confidence - spread might be too random to trade"
+            )
+        },
+        {
+            "id": "mean_reversion_half_life_days",
+            "title": "Mean Reversion Half-Life",
+            "decimal_places": 1,
+            "unit_type": "time",
+            "unit_symbol": " days",
+            "description": (
+                "Definition: This answers the crucial question: 'When these two stocks get out of sync, how long does it typically take for them to get halfway back to normal?' It's like asking how long it takes a rubber band to snap halfway back after you stretch it."
+                "<br><br>"
+                "Formula: \\text{half life} = \\frac{\\ln(0.5)}{\\ln(1 + \\lambda)}<br>"
+                "Where λ is the mean-reversion speed coefficient"
+                "<br><br>"
+                "Context: If two stocks are normally priced similarly, but one suddenly jumps 10% higher than the other, the half-life tells you how many days it usually takes for that gap to shrink to 5%. Faster is generally better because your money isn't tied up as long."
+                "<br><br>"
+                "Interpretation:"
+                "• 1-5 days = very fast - profits come quickly, less time at risk"
+                "• 5-15 days = moderate - reasonable timeframe for most strategies"
+                "• 15-30 days = slow - requires patience and ties up capital longer"
+                "• Above 30 days = very slow - might not be worth the wait"
+            )
+        },
+        {
+            "id": "spread_std_dev",
+            "title": "Spread Standard Deviation",
+            "decimal_places": 2,
+            "unit_type": "number",
+            "unit_symbol": "",
+            "description": (
+                "Definition: This measures how much the spread typically bounces around its average value. It's like measuring how much a person's daily mood varies from their normal temperament - some people are very steady, others are more volatile."
+                "<br><br>"
+                "Formula: \\sigma_{\\text{spread}} = \\sqrt{\\text{variance}(\\text{spread})}"
+                "<br><br>"
+                "Context: A higher standard deviation means the spread moves in larger swings, potentially offering bigger profit opportunities but also bigger risks. A lower standard deviation means smaller, more predictable movements."
+                "<br><br>"
+                "Interpretation:"
+                "• Low values = stable, predictable spread movements"
+                "• Medium values = moderate volatility with reasonable opportunities"
+                "• High values = volatile spread with big opportunities but higher risk"
+                "• Used with Z-score to determine when spread is unusually wide or narrow"
+            )
+        },
+        
+        # ROW 2: Spread Performance & Risk Metrics
+        {
+            "id": "spread_z_score",
+            "title": "Spread Z-Score",
+            "decimal_places": 2,
+            "unit_type": "number",
+            "unit_symbol": "",
+            "description": (
+                "Definition: This number tells you: 'How unusual is the current price difference between these two stocks?' It measures how many 'standard deviations' (think of them as units of weirdness) the current spread is from normal. It's like a fever thermometer for stock relationships."
+                "<br><br>"
+                "Formula: z = \\frac{\\text{spread}_{\\text{current}} - \\text{mean}(\\text{spread})}{\\text{std}(\\text{spread})}"
+                "<br><br>"
+                "Context: If Coke and Pepsi normally trade within $5 of each other, but today Coke is $15 higher than Pepsi, that's very unusual. The Z-score quantifies this unusualness. Most pair traders enter trades when Z-score hits +2 or -2 (meaning the spread is 2 standard deviations from normal)."
+                "<br><br>"
+                "Interpretation:"
+                "• +2 or higher = very unusual - one stock is much more expensive than normal vs the other (time to sell the expensive one)"
+                "• +1 to +2 = moderately unusual - starting to get interesting"
+                "• -1 to +1 = normal range - no trading opportunity"
+                "• -2 or lower = very unusual in opposite direction (time to buy the cheaper one)"
+            )
+        },
         {
             "id": "spread_cumulative_return",
             "title": "Spread Cumulative Return",
@@ -320,108 +512,6 @@ def get_metrics():
                 "• 3-7% = moderate stress - some trades will make you nervous"
                 "• 7-15% = high stress - you'll need strong nerves to stick with trades"
                 "• Above 15% = extreme stress - most people would panic and close trades early"
-            )
-        },
-        {
-            "id": "cointegration_adf_stat",
-            "title": "Cointegration ADF Stat",
-            "decimal_places": 3,
-            "unit_type": "number",
-            "unit_symbol": "",
-            "description": (
-                "Definition: This is a statistical test that answers: 'Are these two stocks actually connected in a predictable way, or am I just imagining a pattern?' The ADF (Augmented Dickey-Fuller) test checks if the price difference between two stocks behaves predictably over time."
-                "<br><br>"
-                "Formula: \\Delta y_t = \\alpha + \\beta \\cdot t + \\gamma \\cdot y_{t-1} + \\sum_{i=1}^{p} \\delta_i \\cdot \\Delta y_{t-i} + \\epsilon_t<br>"
-                "Test statistic = γ / SE(γ)"
-                "<br><br>"
-                "Context: Think of two friends walking dogs connected by an elastic leash. Sometimes one dog runs ahead, but the leash pulls them back together. The ADF test checks if your two stocks behave like those dogs - when one gets 'too far' from the other, do they reliably come back together?"
-                "<br><br>"
-                "Interpretation:"
-                "• -4.0 or more negative = excellent - very strong statistical relationship"
-                "• -3.5 to -4.0 = good - solid evidence of connection"
-                "• -3.0 to -3.5 = moderate - some evidence but not bulletproof"
-                "• Above -3.0 = weak - the stocks might not actually be connected"
-            )
-        },
-        {
-            "id": "cointegration_p_value",
-            "title": "Cointegration P-Value",
-            "decimal_places": 4,
-            "unit_type": "number",
-            "unit_symbol": "",
-            "description": (
-                "Definition: This number answers: 'What's the probability that I'm wrong about these two stocks being connected?' It's like a confidence score for your pair trading strategy. Lower numbers mean you can be more confident the relationship is real, not just random chance."
-                "<br><br>"
-                "Formula: P\\left(|t| > |\\text{ADF stat}|\\right) \\text{ under null hypothesis of unit root}"
-                "<br><br>"
-                "Context: Scientists use p-values to decide if their discoveries are real or just lucky coincidences. In finance, we use the same idea. A p-value of 0.03 means there's only a 3% chance you're seeing a fake pattern. It's like a weather forecast - 97% chance of rain means you should probably bring an umbrella."
-                "<br><br>"
-                "Interpretation:"
-                "• Below 0.01 = extremely confident - less than 1% chance you're wrong"
-                "• 0.01-0.05 = confident - less than 5% chance you're wrong (industry standard)"
-                "• 0.05-0.10 = moderate confidence - some risk you're seeing things that aren't there"
-                "• Above 0.10 = weak confidence - too risky to trust this relationship"
-            )
-        },
-        {
-            "id": "hedge_ratio",
-            "title": "Hedge Ratio",
-            "decimal_places": 3,
-            "unit_type": "number",
-            "unit_symbol": "",
-            "description": (
-                "Definition: This number tells you: 'For every 1 share of the first stock I buy, how many shares of the second stock should I sell to create a balanced pair?' It's like a recipe ratio - 1 cup flour needs 0.5 cups milk."
-                "<br><br>"
-                "Formula: \\text{spread} = \\text{ticker}_1 - \\text{hedge ratio} \\times \\text{ticker}_2<br>"
-                "Obtained from OLS: hedge_ratio = slope of regression(ticker₁ ~ ticker₂)"
-                "<br><br>"
-                "Context: If Coca-Cola costs $50 and Pepsi costs $100, but historically Coke moves twice as much as Pepsi, your hedge ratio might be 0.5. This means: buy 1 share of Coke ($50) and sell 0.5 shares of Pepsi ($50), creating a balanced $0 net position that profits from their relative movements."
-                "<br><br>"
-                "Interpretation:"
-                "• 0.8 = for every 1 share of stock A you buy, sell 0.8 shares of stock B"
-                "• 1.2 = for every 1 share of stock A you buy, sell 1.2 shares of stock B"
-                "• The goal is to make your total position value roughly neutral to market movements"
-            )
-        },
-        {
-            "id": "mean_reversion_half_life_days",
-            "title": "Mean Reversion Half-Life",
-            "decimal_places": 1,
-            "unit_type": "time",
-            "unit_symbol": " days",
-            "description": (
-                "Definition: This answers the crucial question: 'When these two stocks get out of sync, how long does it typically take for them to get halfway back to normal?' It's like asking how long it takes a rubber band to snap halfway back after you stretch it."
-                "<br><br>"
-                "Formula: \\text{half life} = \\frac{\\ln(0.5)}{\\ln(1 + \\lambda)}<br>"
-                "Where λ is the mean-reversion speed coefficient"
-                "<br><br>"
-                "Context: If two stocks are normally priced similarly, but one suddenly jumps 10% higher than the other, the half-life tells you how many days it usually takes for that gap to shrink to 5%. Faster is generally better because your money isn't tied up as long."
-                "<br><br>"
-                "Interpretation:"
-                "• 1-5 days = very fast - profits come quickly, less time at risk"
-                "• 5-15 days = moderate - reasonable timeframe for most strategies"
-                "• 15-30 days = slow - requires patience and ties up capital longer"
-                "• Above 30 days = very slow - might not be worth the wait"
-            )
-        },
-        {
-            "id": "spread_z_score",
-            "title": "Spread Z-Score",
-            "decimal_places": 2,
-            "unit_type": "number",
-            "unit_symbol": "",
-            "description": (
-                "Definition: This number tells you: 'How unusual is the current price difference between these two stocks?' It measures how many 'standard deviations' (think of them as units of weirdness) the current spread is from normal. It's like a fever thermometer for stock relationships."
-                "<br><br>"
-                "Formula: z = \\frac{\\text{spread}_{\\text{current}} - \\text{mean}(\\text{spread})}{\\text{std}(\\text{spread})}"
-                "<br><br>"
-                "Context: If Coke and Pepsi normally trade within $5 of each other, but today Coke is $15 higher than Pepsi, that's very unusual. The Z-score quantifies this unusualness. Most pair traders enter trades when Z-score hits +2 or -2 (meaning the spread is 2 standard deviations from normal)."
-                "<br><br>"
-                "Interpretation:"
-                "• +2 or higher = very unusual - one stock is much more expensive than normal vs the other (time to sell the expensive one)"
-                "• +1 to +2 = moderately unusual - starting to get interesting"
-                "• -1 to +1 = normal range - no trading opportunity"
-                "• -2 or lower = very unusual in opposite direction (time to buy the cheaper one)"
             )
         },
         {

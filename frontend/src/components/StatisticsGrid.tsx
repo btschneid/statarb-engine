@@ -53,7 +53,7 @@ const StatisticCard: React.FC<StatisticProps> = ({ id, title, value, description
 
 export const StatisticsGrid: React.FC<StatisticsGridProps> = ({ statistics }) => {
   return (
-    <div className="col-span-12 grid grid-cols-6 grid-rows-3 gap-3">
+    <div className="col-span-12 grid grid-cols-7 grid-rows-3 gap-3">
       {statistics.map((stat) => (
         <div key={stat.id} className="card p-2">
           <div className="flex flex-col">

@@ -19,24 +19,32 @@ class SectorTickersResponse(BaseModel):
     tickers: List[str]
 
 class RiskMetrics(BaseModel):
-    cumulative_return: float
-    annualized_return: float
-    sharpe_ratio: float
-    sortino_ratio: float
-    calmar_ratio: float
-    max_drawdown: float
-    var_95: float
-    cvar_95: float
-    profit_factor: float
-    mae: float
-    adf_statistic: float
-    p_value: float
+    # Row 1: Relationship & Stationarity
     hedge_ratio: float
-    half_life_days: float
-    number_of_trades: int
+    cointegration_adf_stat: float
+    cointegration_p_value: float
+    spread_adf_stat: float
+    spread_adf_p_value: float
+    mean_reversion_half_life_days: float
+    spread_std_dev: float
+    
+    # Row 2: Spread Performance & Risk Metrics
+    spread_z_score: float
+    spread_cumulative_return: float
+    spread_annualized_return: float
+    spread_sharpe_ratio: float
+    spread_sortino_ratio: float
+    spread_calmar_ratio: float
+    spread_max_drawdown: float
+    
+    # Row 3: Trade Stats & Tail Risk
+    spread_var_95: float
+    spread_cvar_95: float
+    spread_profit_factor: float
+    spread_mae: float
+    num_trades: int
     win_rate: float
-    mean_duration: float
-    z_score: float
+    mean_trade_duration_days: float
 
 class ChartDataPoint(BaseModel):
     date: datetime

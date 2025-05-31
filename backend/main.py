@@ -77,7 +77,7 @@ def get_risk_metrics(
         df = get_ticker_data(tickers, start, end)
         if df.empty:
             raise HTTPException(status_code=404, detail="No data found for the specified tickers")
-        metrics = calculate_risk_metrics(df)
+        metrics = calculate_risk_metrics(df, tickers)
         return metrics
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

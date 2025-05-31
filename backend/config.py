@@ -34,22 +34,30 @@ DEFAULT_SECTOR = "Tech"
 
 # List of metrics
 METRICS = [
-    "cumulative_return",
-    "annualized_return",
-    "sharpe_ratio",
-    "sortino_ratio",
-    "calmar_ratio",
-    "max_drawdown",
-    "var_95",
-    "cvar_95",
-    "profit_factor",
-    "mae",
-    "adf_statistic",
-    "p_value",
+    # Row 1: Relationship & Stationarity
     "hedge_ratio",
-    "half_life_days",
-    "number_of_trades",
+    "cointegration_adf_stat",
+    "cointegration_p_value",
+    "spread_adf_stat",
+    "spread_adf_p_value",
+    "mean_reversion_half_life_days",
+    "spread_std_dev",
+    
+    # Row 2: Spread Performance & Risk Metrics
+    "spread_z_score",
+    "spread_cumulative_return",
+    "spread_annualized_return",
+    "spread_sharpe_ratio",
+    "spread_sortino_ratio",
+    "spread_calmar_ratio",
+    "spread_max_drawdown",
+    
+    # Row 3: Trade Stats & Tail Risk
+    "spread_var_95",
+    "spread_cvar_95",
+    "spread_profit_factor",
+    "spread_mae",
+    "num_trades",
     "win_rate",
-    "mean_duration",
-    "z_score"
+    "mean_trade_duration_days"
 ]

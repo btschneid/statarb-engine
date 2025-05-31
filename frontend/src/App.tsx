@@ -26,24 +26,32 @@ interface SectorTickersResponse {
 }
 
 interface RiskMetrics {
-  cumulative_return: number;
-  annualized_return: number;
-  sharpe_ratio: number;
-  sortino_ratio: number;
-  calmar_ratio: number;
-  max_drawdown: number;
-  var_95: number;
-  cvar_95: number;
-  profit_factor: number;
-  mae: number;
-  adf_statistic: number;
-  p_value: number;
+  // Row 1: Relationship & Stationarity
   hedge_ratio: number;
-  half_life_days: number;
-  number_of_trades: number;
+  cointegration_adf_stat: number;
+  cointegration_p_value: number;
+  spread_adf_stat: number;
+  spread_adf_p_value: number;
+  mean_reversion_half_life_days: number;
+  spread_std_dev: number;
+  
+  // Row 2: Spread Performance & Risk Metrics
+  spread_z_score: number;
+  spread_cumulative_return: number;
+  spread_annualized_return: number;
+  spread_sharpe_ratio: number;
+  spread_sortino_ratio: number;
+  spread_calmar_ratio: number;
+  spread_max_drawdown: number;
+  
+  // Row 3: Trade Stats & Tail Risk
+  spread_var_95: number;
+  spread_cvar_95: number;
+  spread_profit_factor: number;
+  spread_mae: number;
+  num_trades: number;
   win_rate: number;
-  mean_duration: number;
-  z_score: number;
+  mean_trade_duration_days: number;
 }
 
 interface ChartDataPoint {
