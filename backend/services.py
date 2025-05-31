@@ -249,19 +249,9 @@ def find_best_cointegrated_pair(tickers: List[str], start: str, end: str) -> Tup
                     best_p_value = p_value
                     best_pair = (ticker1, ticker2)
 
-                    # Get chart data for this pair
-                    pair_df = df[[ticker1, ticker2]]
-                    chart_data = []
-                    for date, row in pair_df.iterrows():
-                        # Convert date to string format if it's a datetime
-                        date_str = date.strftime('%Y-%m-%d') if hasattr(date, 'strftime') else str(date)
-                        chart_data.append({
-                            'date': date_str,
-                            ticker1: float(row[ticker1]),
-                            ticker2: float(row[ticker2])
-                        })
-
-                    best_chart_data = chart_data
+                    # Get chart data for this pair - use same format as /chart-data endpoint
+                    pair_df = df[['date', ticker1, ticker2]]
+                    best_chart_data = pair_df.to_dict(orient="records")
 
             except Exception as e:
                 logging.error(f"Error processing pair {ticker1}-{ticker2}: {str(e)}")

@@ -8,6 +8,7 @@ interface TickerManagerProps {
   onTickersChange: (tickers: string[]) => void;
   onClearTickers: () => void;
   onFindBestPair: () => void;
+  onManualPairSelection: (selectedPair: string[]) => void;
   initialTickers?: string[];
   clearTickers?: number;
   bestPairTickers?: string[];
@@ -33,6 +34,7 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
   onTickersChange,
   onClearTickers,
   onFindBestPair,
+  onManualPairSelection,
   initialTickers = [],
   clearTickers = 0,
   bestPairTickers = [],
@@ -183,32 +185,38 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
 
   const handleTickerClick = (ticker: string) => {
     debugLog('👆 [TickerManager] Ticker clicked:', ticker, 'Current selection:', selectedTickers);
-    setSelectedTickers(prev => {
-      let newSelection: string[];
-      // If we already have a pair selected, start fresh
-      if (prev.length === 2) {
-        newSelection = [ticker];
-        debugLog('🔄 [TickerManager] Had 2 selected, starting fresh with:', ticker);
-      }
-      // If we have one selected and it's not the same ticker, add it
-      else if (prev.length === 1 && !prev.includes(ticker)) {
-        newSelection = [...prev, ticker];
-        debugLog('➕ [TickerManager] Adding second ticker, pair:', newSelection);
-      }
-      // If we have one selected and it's the same ticker, remove it
-      else if (prev.length === 1 && prev.includes(ticker)) {
-        newSelection = [];
-        debugLog('➖ [TickerManager] Deselecting ticker, clearing selection');
-      }
-      // If we have none selected, add it
-      else {
-        newSelection = [ticker];
-        debugLog('🎯 [TickerManager] First ticker selected:', ticker);
-      }
-      
-      debugLog('📊 [TickerManager] Selection changed from', prev, 'to', newSelection);
-      return newSelection;
-    });
+    
+    let newSelection: string[];
+    
+    // If we already have a pair selected, start fresh
+    if (selectedTickers.length === 2) {
+      newSelection = [ticker];
+      debugLog('🔄 [TickerManager] Had 2 selected, starting fresh with:', ticker);
+    }
+    // If we have one selected and it's not the same ticker, add it
+    else if (selectedTickers.length === 1 && !selectedTickers.includes(ticker)) {
+      newSelection = [...selectedTickers, ticker];
+      debugLog('➕ [TickerManager] Adding second ticker, pair:', newSelection);
+    }
+    // If we have one selected and it's the same ticker, remove it
+    else if (selectedTickers.length === 1 && selectedTickers.includes(ticker)) {
+      newSelection = [];
+      debugLog('➖ [TickerManager] Deselecting ticker, clearing selection');
+    }
+    // If we have none selected, add it
+    else {
+      newSelection = [ticker];
+      debugLog('🎯 [TickerManager] First ticker selected:', ticker);
+    }
+    
+    debugLog('📊 [TickerManager] Selection changed from', selectedTickers, 'to', newSelection);
+    setSelectedTickers(newSelection);
+    
+    // If we now have a complete pair, notify parent
+    if (newSelection.length === 2) {
+      debugLog('✅ [TickerManager] Complete pair selected, notifying parent:', newSelection);
+      onManualPairSelection(newSelection);
+    }
   };
 
   return (

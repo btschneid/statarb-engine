@@ -69,11 +69,7 @@ function App() {
   const [chartData, setChartData] = useState<ChartDataPoint[] | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [clearTickers, setClearTickers] = useState(0)
-  const [prevStartDate, setPrevStartDate] = useState('')
-  const [prevEndDate, setPrevEndDate] = useState('')
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false)
-  const isSectorChange = useRef(false)
-  const isFindBestPair = useRef(false)
 
   // Fetch default sector tickers
   useEffect(() => {
@@ -140,73 +136,59 @@ function App() {
       })
   }, [])
 
-  // Fetch initial chart data when we have at least 2 tickers
-  useEffect(() => {
-    debugLog('🔄 [App] useEffect: Chart data dependency change detected', {
-      currentTickers: currentTickers.length,
-      tickersList: currentTickers,
-      startDate,
-      endDate,
-      currentlyDisplayed: displayedTickers,
-      isFindBestPair: isFindBestPair.current
-    });
-    
-    // Skip if we're in the middle of a "Find Best Pair" operation
-    if (isFindBestPair.current) {
-      debugLog('⏸️ [App] Skipping chart fetch - Find Best Pair operation in progress');
-      isFindBestPair.current = false; // Reset flag
+  // Simple function to fetch chart data for a specific pair
+  const fetchChartData = async (tickers: string[], start: string, end: string) => {
+    if (tickers.length !== 2 || !start || !end) {
+      debugLog('⏸️ [App] fetchChartData: Invalid parameters', { tickers, start, end });
       return;
     }
+
+    debugLog('📊 [App] fetchChartData: Fetching data for', tickers, 'from', start, 'to', end);
     
-    const fetchInitialChartData = async () => {
-      if (currentTickers.length >= 2) {
-        const tickersToDisplay = currentTickers.slice(0, 2);
-        
-        // Check if tickers are different from currently displayed
-        const isDifferentPair = tickersToDisplay.length !== displayedTickers.length || 
-                               tickersToDisplay.some((ticker, index) => ticker !== displayedTickers[index]);
-        
-        // Check if dates have changed
-        const isDifferentDates = startDate !== prevStartDate || endDate !== prevEndDate;
-        
-        // Fetch if either tickers or dates have changed
-        if (isDifferentPair || isDifferentDates) {
-          const reason = isDifferentPair ? 'ticker pair changed' : 'dates changed';
-          debugLog(`📊 [App] ${reason}, fetching chart data for:`, tickersToDisplay, isDifferentPair ? `(was: ${displayedTickers})` : `(dates: ${prevStartDate} to ${prevEndDate} -> ${startDate} to ${endDate})`);
-          try {
-            const params = new URLSearchParams();
-            tickersToDisplay.forEach(ticker => {
-              params.append('tickers', ticker);
-            });
-            params.append('start', startDate);
-            params.append('end', endDate);
-    
-            const response = await apiClient.get<ChartDataPoint[]>('/chart-data', {
-              params: params
-            });
-            debugLog('✅ [App] Chart data fetched successfully, data points:', response.data.length);
-            setChartData(response.data);
-            setDisplayedTickers(tickersToDisplay);
-            setPrevStartDate(startDate);
-            setPrevEndDate(endDate);
-          } catch (error) {
-            debugError('❌ [App] Error fetching initial chart data:', error);
-          }
-        } else {
-          debugLog('⏸️ [App] No changes detected, skipping chart data fetch:', tickersToDisplay);
-        }
-      } else {
-        debugLog('⏸️ [App] Not enough tickers for chart data (need 2, have', currentTickers.length, ')');
-        if (displayedTickers.length > 0) {
-          debugLog('🧹 [App] Clearing chart data due to insufficient tickers');
-          setChartData(null);
-          setDisplayedTickers([]);
-        }
-      }
-    };
-  
-    fetchInitialChartData();
-  }, [currentTickers, startDate, endDate, displayedTickers, prevStartDate, prevEndDate]);
+    try {
+      const params = new URLSearchParams();
+      tickers.forEach(ticker => {
+        params.append('tickers', ticker);
+      });
+      params.append('start', start);
+      params.append('end', end);
+
+      const response = await apiClient.get<ChartDataPoint[]>('/chart-data', {
+        params: params
+      });
+      
+      debugLog('✅ [App] fetchChartData: Success, data points:', response.data.length);
+      setChartData(response.data);
+      setDisplayedTickers(tickers);
+    } catch (error) {
+      debugError('❌ [App] fetchChartData: Error:', error);
+    }
+  };
+
+  // Handle when user manually selects a pair
+  const handleManualPairSelection = (selectedPair: string[]) => {
+    debugLog('👆 [App] handleManualPairSelection called with:', selectedPair);
+    if (selectedPair.length === 2) {
+      fetchChartData(selectedPair, startDate, endDate);
+    }
+  };
+
+  // Handle date changes - refetch if we have a displayed pair
+  const handleStartDateChange = (newStartDate: string) => {
+    debugLog('📅 [App] Start date changed to:', newStartDate);
+    setStartDate(newStartDate);
+    if (displayedTickers.length === 2) {
+      fetchChartData(displayedTickers, newStartDate, endDate);
+    }
+  };
+
+  const handleEndDateChange = (newEndDate: string) => {
+    debugLog('📅 [App] End date changed to:', newEndDate);
+    setEndDate(newEndDate);
+    if (displayedTickers.length === 2) {
+      fetchChartData(displayedTickers, startDate, newEndDate);
+    }
+  };
 
   // Function to update a single statistic value
   const updateStatistic = (id: string, value: number) => {
@@ -237,22 +219,13 @@ function App() {
   const handleTickersChange = (tickers: string[]) => {
     debugLog('🔄 [App] handleTickersChange called with:', tickers);
     debugLog('📝 [App] Previous currentTickers:', currentTickers);
-    debugLog('🏢 [App] Is sector change:', isSectorChange.current);
     setCurrentTickers(tickers);
-    
-    // Reset sector change flag after handling
-    if (isSectorChange.current) {
-      debugLog('🔄 [App] Resetting sector change flag');
-      isSectorChange.current = false;
-    }
   };
 
   const handleSectorSelect = (sector: string) => {
     debugLog('🏢 [App] handleSectorSelect called with:', sector);
-    debugLog('🏢 [App] Setting sector change flag to prevent duplicate chart fetches');
-    isSectorChange.current = true;
     setSelectedSector(sector)
-  }
+  };
 
   // Combine metadata with current values for the StatisticsGrid
   const statistics = metricsMetadata.map(metric => ({
@@ -288,10 +261,7 @@ function App() {
       const { pair, chart_data } = response.data;
       debugLog('✅ [App] Best cointegrated pair found:', pair);
       
-      // Set flag to prevent useEffect from overriding our best pair data
-      debugLog('🔄 [App] Setting find best pair flag to prevent useEffect override');
-      isFindBestPair.current = true;
-  
+      // Update chart data and displayed tickers directly from the response
       setChartData(chart_data);
       setDisplayedTickers(pair);
       debugLog('✅ [App] Successfully updated with best pair data');
@@ -328,20 +298,20 @@ function App() {
         <ThemeToggle />
       </div>
 
-      {/* Row 1 - Header Section (Fixed Height) */}
-      <div className="flex-shrink-0 mb-2">
-        <div className="grid grid-cols-12 card p-4">
+      {/* Row 1 - Header Section (Compact, can shrink when zoomed) */}
+      <div className="flex-shrink mb-2 min-h-[80px]">
+        <div className="grid grid-cols-12 card p-3">
           <DateRangeSelector 
             startDate={startDate}
             endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
+            onStartDateChange={handleStartDateChange}
+            onEndDateChange={handleEndDateChange}
           />
 
           {/* Title */}
           <div className="col-span-4 h-full">
             <div className="h-full flex items-center justify-center">
-              <h1 className="text-3xl font-bold" style={{ color: 'rgb(var(--color-foreground))' }}>
+              <h1 className="text-2xl lg:text-3xl font-bold" style={{ color: 'rgb(var(--color-foreground))' }}>
                 Risk Engine Simulator
               </h1>
             </div>
@@ -349,9 +319,9 @@ function App() {
 
           {/* Buttons Container */}
           <div className="col-span-4 h-full flex items-center">
-            <div className="w-full flex justify-center gap-4">
+            <div className="w-full flex justify-center gap-2 lg:gap-4">
               <button 
-                className="px-5 py-3 text-base rounded-lg border-2 hover:opacity-70 transition-opacity"
+                className="px-3 lg:px-5 py-2 lg:py-3 text-sm lg:text-base rounded-lg border-2 hover:opacity-70 transition-opacity"
                 style={{
                   backgroundColor: 'transparent',
                   borderColor: 'rgb(var(--color-border))',
@@ -363,7 +333,7 @@ function App() {
               </button>
               
               <button
-                className="px-5 py-3 text-base rounded-lg border-2 hover:opacity-70 transition-opacity flex items-center gap-2"
+                className="px-3 lg:px-5 py-2 lg:py-3 text-sm lg:text-base rounded-lg border-2 hover:opacity-70 transition-opacity flex items-center gap-2"
                 style={{
                   backgroundColor: 'transparent',
                   borderColor: 'rgb(var(--color-border))',
@@ -373,18 +343,18 @@ function App() {
                 title="View on GitHub"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.30.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                 </svg>
-                GitHub
+                <span className="hidden sm:inline">GitHub</span>
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Row 2 - Main Content Section (Flexible Height - Takes remaining space) */}
-      <div className="flex-1 mb-2 min-h-0">
-        <div className="h-full grid grid-cols-12 gap-4 card p-6 overflow-hidden">
+      {/* Row 2 - Main Content Section (Priority - Gets most space and maintains minimum size) */}
+      <div className="flex-1 mb-2 min-h-[400px]">
+        <div className="h-full grid grid-cols-12 gap-4 card p-4 lg:p-6 overflow-hidden">
           <StockGraph data={chartData} />
           <TickerManager 
             onTickerAdd={handleTickerAdd}
@@ -392,6 +362,7 @@ function App() {
             onTickersChange={handleTickersChange}
             onClearTickers={handleClearTickers}
             onFindBestPair={handleFindBestPair}
+            onManualPairSelection={handleManualPairSelection}
             initialTickers={defaultTickers}
             clearTickers={clearTickers}
             bestPairTickers={displayedTickers}
@@ -400,8 +371,8 @@ function App() {
         </div>
       </div>
 
-      {/* Row 3 - Statistics Section (Fixed Height) */}
-      <div className="flex-shrink-0">
+      {/* Row 3 - Statistics Section (Can shrink, but maintains readability) */}
+      <div className="flex-shrink min-h-[120px]">
         <StatisticsGrid statistics={statistics} />
       </div>
 

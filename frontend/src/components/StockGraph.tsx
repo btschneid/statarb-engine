@@ -24,7 +24,33 @@ export const StockGraph: React.FC<StockGraphProps> = ({ data }) => {
   if (!data || data.length === 0) {
     return (
       <div className="col-span-8 h-full p-4 flex items-center justify-center overflow-hidden">
-        <p style={{ color: 'rgb(var(--color-muted-foreground))' }}>No data available</p>
+        <div className="text-center space-y-4 max-w-md">
+          <h3 
+            className="text-xl font-semibold mb-2"
+            style={{ color: 'rgb(var(--color-foreground))' }}
+          >
+            Ready to Analyze Stock Pairs
+          </h3>
+          <div 
+            className="text-sm space-y-2 leading-relaxed"
+            style={{ color: 'rgb(var(--color-muted-foreground))' }}
+          >
+            <p>To display chart data, you need to:</p>
+            <div className="space-y-1 text-left">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">1</span>
+                <span>Click on two tickers to select a pair</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">2</span>
+                <span>Or click "Find Best Cointegrated Pair"</span>
+              </div>
+            </div>
+            <p className="text-xs mt-3 italic">
+              💡 Tip: Adjust the date range in the top-left to analyze different time periods
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
