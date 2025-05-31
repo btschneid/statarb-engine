@@ -67,7 +67,8 @@ function App() {
   const [statisticsValues, setStatisticsValues] = useState<Record<string, number>>({})
   const [defaultTickers, setDefaultTickers] = useState<string[]>([])
   const [chartData, setChartData] = useState<ChartDataPoint[] | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isRunningMetrics, setIsRunningMetrics] = useState(false)
+  const [isFindingBestPair, setIsFindingBestPair] = useState(false)
   const [clearTickers, setClearTickers] = useState(0)
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false)
 
@@ -190,6 +191,43 @@ function App() {
     }
   };
 
+  // Handle running risk metrics on selected pair
+  const handleRunMetrics = async () => {
+    if (displayedTickers.length !== 2) {
+      debugError('❌ [App] Cannot run metrics: Need exactly 2 displayed tickers, have:', displayedTickers.length);
+      return;
+    }
+
+    debugLog('📊 [App] Running risk metrics for pair:', displayedTickers);
+    setIsRunningMetrics(true);
+
+    try {
+      const params = new URLSearchParams();
+      displayedTickers.forEach(ticker => {
+        params.append('tickers', ticker);
+      });
+      params.append('start', startDate);
+      params.append('end', endDate);
+
+      const response = await apiClient.get<RiskMetrics>('/risk-metrics', {
+        params: params
+      });
+
+      debugLog('✅ [App] Risk metrics received:', response.data);
+      
+      // Update all statistics with the new values
+      const metricsAsRecord = Object.fromEntries(
+        Object.entries(response.data).map(([key, value]) => [key, Number(value)])
+      );
+      updateStatistics(metricsAsRecord);
+      
+    } catch (error) {
+      debugError('❌ [App] Error fetching risk metrics:', error);
+    } finally {
+      setIsRunningMetrics(false);
+    }
+  };
+
   // Function to update a single statistic value
   const updateStatistic = (id: string, value: number) => {
     setStatisticsValues(prev => ({
@@ -240,7 +278,7 @@ function App() {
       return;
     }
   
-    setIsLoading(true);
+    setIsFindingBestPair(true);
     debugLog('🎯 [App] Starting best pair analysis...');
     try {
       const params = new URLSearchParams();
@@ -268,7 +306,7 @@ function App() {
     } catch (error) {
       debugError('❌ [App] Error finding best pair:', error);
     } finally {
-      setIsLoading(false);
+      setIsFindingBestPair(false);
       debugLog('✅ [App] Best pair analysis complete');
     }
   };
@@ -363,10 +401,12 @@ function App() {
             onClearTickers={handleClearTickers}
             onFindBestPair={handleFindBestPair}
             onManualPairSelection={handleManualPairSelection}
+            onRunMetrics={handleRunMetrics}
             initialTickers={defaultTickers}
             clearTickers={clearTickers}
             bestPairTickers={displayedTickers}
-            isLoading={isLoading}
+            isRunningMetrics={isRunningMetrics}
+            isFindingBestPair={isFindingBestPair}
           />
         </div>
       </div>

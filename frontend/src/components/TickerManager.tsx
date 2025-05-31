@@ -9,10 +9,12 @@ interface TickerManagerProps {
   onClearTickers: () => void;
   onFindBestPair: () => void;
   onManualPairSelection: (selectedPair: string[]) => void;
+  onRunMetrics: () => void;
   initialTickers?: string[];
   clearTickers?: number;
   bestPairTickers?: string[];
-  isLoading?: boolean;
+  isRunningMetrics?: boolean;
+  isFindingBestPair?: boolean;
 }
 
 interface TickerValidation {
@@ -35,15 +37,18 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
   onClearTickers,
   onFindBestPair,
   onManualPairSelection,
+  onRunMetrics,
   initialTickers = [],
   clearTickers = 0,
   bestPairTickers = [],
-  isLoading = false,
+  isRunningMetrics = false,
+  isFindingBestPair = false,
 }) => {
   const [tickerInput, setTickerInput] = useState('');
   const [tickers, setTickers] = useState<string[]>(initialTickers);
   const [sectors, setSectors] = useState<string[]>([]);
   const [selectedTickers, setSelectedTickers] = useState<string[]>([]);
+  const [loadingSector, setLoadingSector] = useState<string | null>(null);
 
   // Reset selected tickers when bestPairTickers changes
   useEffect(() => {
@@ -164,6 +169,7 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
 
   const handleSectorSelect = async (sector: string) => {
     debugLog('🏢 [TickerManager] Sector selected:', sector);
+    setLoadingSector(sector);
     try {
       debugLog('🌐 [TickerManager] Fetching tickers for sector:', sector);
       const response = await apiClient.get<SectorTickersResponse>(`/sectors/${sector}/tickers`);
@@ -179,6 +185,7 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
     } catch (error) {
       debugError('❌ [TickerManager] Failed to fetch tickers for sector', sector, ':', error);
     } finally {
+      setLoadingSector(null);
       debugLog('✅ [TickerManager] Sector selection complete for:', sector);
     }
   };
@@ -298,16 +305,16 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
               <button 
                 key={sector}
                 onClick={() => handleSectorSelect(sector)}
-                disabled={isLoading}
+                disabled={loadingSector === sector}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium w-full transition-colors hover:opacity-80 ${
-                  isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                  loadingSector === sector ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
                 style={{
                   backgroundColor: 'rgb(var(--color-card))',
                   color: 'rgb(var(--color-card-foreground))'
                 }}
               >
-                {sector}
+                {loadingSector === sector ? 'Loading...' : sector}
               </button>
             ))}
           </div>
@@ -318,21 +325,22 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
           <div className="flex items-center justify-center gap-4">
             <button
               className="btn btn-success py-3 flex-1 text-lg"
-              disabled={selectedTickers.length !== 2}
+              disabled={selectedTickers.length !== 2 || isRunningMetrics}
               onClick={() => {
                 debugLog('Run Metrics clicked:', {
                   bestPairTickers,
                   selectedTickers
                 });
+                onRunMetrics();
               }}
             >
-              Run Metrics on Selected Pair
+              {isRunningMetrics ? 'Running Metrics...' : 'Run Metrics on Selected Pair'}
             </button>
             <button 
               onClick={onFindBestPair}
-              disabled={isLoading || tickers.length < 2}
+              disabled={isFindingBestPair || tickers.length < 2}
               className={`btn btn-default py-3 flex-1 text-lg ${
-                isLoading || tickers.length < 2
+                isFindingBestPair || tickers.length < 2
                   ? 'opacity-50 cursor-not-allowed'
                   : ''
               }`}
@@ -342,7 +350,7 @@ export const TickerManager: React.FC<TickerManagerProps> = ({
                 color: 'rgb(var(--color-success))'
               }}
             >
-              {isLoading ? 'Loading...' : 'Find Best Cointegrated Pair'}
+              {isFindingBestPair ? 'Finding Best Pair...' : 'Find Best Cointegrated Pair'}
             </button>
           </div>
         </div>

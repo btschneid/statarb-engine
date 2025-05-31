@@ -21,10 +21,11 @@ const HtmlTooltip = styled(({ className, ...props }: TooltipProps) => (
   [`& .${tooltipClasses.tooltip}`]: {
     backgroundColor: '#f5f5f9',
     color: 'rgba(0, 0, 0, 0.87)',
-    maxWidth: 220,
+    maxWidth: 300,
     fontSize: '0.75rem',
     border: '1px solid #dadde9',
-    padding: '8px 12px',
+    padding: '12px 16px',
+    lineHeight: '1.4',
   },
 }));
 
@@ -56,7 +57,11 @@ export const StatisticsGrid: React.FC<StatisticsGridProps> = ({ statistics }) =>
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-xs font-medium" style={{ color: 'rgb(var(--color-muted-foreground))' }}>{stat.title}</h3>
-              <HtmlTooltip title={stat.description}>
+              <HtmlTooltip 
+                title={
+                  <div dangerouslySetInnerHTML={{ __html: stat.description }} />
+                }
+              >
                 <button className="transition-colors hover:opacity-80" style={{ color: 'rgb(var(--color-muted-foreground))' }}>
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

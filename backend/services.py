@@ -47,24 +47,24 @@ def calculate_risk_metrics(df: pd.DataFrame) -> Dict[str, float]:
     """Calculate risk metrics for the given ticker data"""
     # Placeholder implementation
     return {
-        "cumulative_return": 0.0,
-        "annualized_return": 0.0,
-        "sharpe_ratio": 0.0,
-        "sortino_ratio": 0.0,
-        "calmar_ratio": 0.0,
-        "max_drawdown": 0.0,
-        "var_95": 0.0,
-        "cvar_95": 0.0,
-        "profit_factor": 0.0,
-        "mae": 0.0,
-        "adf_statistic": 0.0,
-        "p_value": 0.0,
+        "spread_cumulative_return": 0.0,
+        "spread_annualized_return": 0.0,
+        "spread_sharpe_ratio": 0.0,
+        "spread_sortino_ratio": 0.0,
+        "spread_calmar_ratio": 0.0,
+        "spread_max_drawdown": 0.0,
+        "spread_var_95": 0.0,
+        "spread_cvar_95": 0.0,
+        "spread_profit_factor": 0.0,
+        "spread_mae": 0.0,
+        "cointegration_adf_stat": 0.0,
+        "cointegration_p_value": 0.05,
         "hedge_ratio": 0.0,
-        "half_life_days": 0.0,
-        "number_of_trades": 0,
+        "mean_reversion_half_life_days": 0.0,
+        "num_trades": 0,
         "win_rate": 0.0,
-        "mean_duration": 0.0,
-        "z_score": 0.0
+        "mean_trade_duration_days": 0.0,
+        "spread_z_score": 0.0
     }
 
 def get_ticker_data(tickers: List[str], start_date: str, end_date: str) -> pd.DataFrame:
@@ -117,94 +117,94 @@ def get_metrics():
     """Get list of all metrics with their metadata"""
     return [
         {
-            "id": "cumulative_return",
-            "title": "Cumulative Return",
-            "description": "Total return over the selected period"
+            "id": "spread_cumulative_return",
+            "title": "Spread Cumulative Return",
+            "description": "Definition: Total percentage return from executing the pair trading strategy over the entire backtest period.<br><br>Context: It tells you how much your strategy would have made in total.<br><br>Interpretation:<br>• +50%: Your strategy would have increased the portfolio by 50%<br>• Higher is better<br>• 0% = breakeven<br>• Negative = loss"
         },
         {
-            "id": "annualized_return",
-            "title": "Annualized Return",
-            "description": "Return annualized to a yearly rate"
+            "id": "spread_annualized_return",
+            "title": "Spread Annualized Return",
+            "description": "Definition: The average yearly return, assuming the performance continued as-is.<br><br>Context: Important for comparing to benchmarks (like S&P 500 or risk-free rate).<br><br>Interpretation:<br>• 10% = expected yearly return<br>• >15% = strong<br>• <0% = unprofitable"
         },
         {
-            "id": "sharpe_ratio",
-            "title": "Sharpe Ratio",
-            "description": "Risk-adjusted return measure"
+            "id": "spread_sharpe_ratio",
+            "title": "Spread Sharpe Ratio",
+            "description": "Definition: Measures return per unit of volatility (risk). Formula: Sharpe = (R - Rf) / σ<br><br>Context: Captures risk-adjusted return — how much return you're getting for each unit of risk.<br><br>Interpretation:<br>• >1.0 = decent<br>• >2.0 = strong<br>• <1.0 = weak<br>• 0 = no return vs risk"
         },
         {
-            "id": "sortino_ratio",
-            "title": "Sortino Ratio",
-            "description": "Risk-adjusted return measure focusing on downside volatility"
+            "id": "spread_sortino_ratio",
+            "title": "Spread Sortino Ratio",
+            "description": "Definition: Like Sharpe but only penalizes downside volatility (bad volatility).<br><br>Context: Better for strategies where only losses matter, like mean-reversion.<br><br>Interpretation:<br>• >2.0 = very good<br>• 1.0–2.0 = moderate<br>• <1.0 = weak risk-return tradeoff"
         },
         {
-            "id": "calmar_ratio",
-            "title": "Calmar Ratio",
-            "description": "Return relative to maximum drawdown"
+            "id": "spread_calmar_ratio",
+            "title": "Spread Calmar Ratio",
+            "description": "Definition: Annualized return / Max drawdown.<br><br>Context: Measures return relative to the worst possible loss.<br><br>Interpretation:<br>• >1.0 = acceptable<br>• >3.0 = great<br>• <1.0 = too much risk"
         },
         {
-            "id": "max_drawdown",
-            "title": "Maximum Drawdown",
-            "description": "Largest peak-to-trough decline"
+            "id": "spread_max_drawdown",
+            "title": "Spread Max Drawdown",
+            "description": "Definition: The largest % drop from a peak to a trough in strategy value.<br><br>Context: Shows the worst case you could've experienced if you started at the peak.<br><br>Interpretation:<br>• -10% = tolerable<br>• -30% = risky<br>• Lower (closer to 0) = better"
         },
         {
-            "id": "var_95",
-            "title": "Value at Risk (95%)",
-            "description": "95th percentile of potential losses"
+            "id": "spread_var_95",
+            "title": "Spread VaR (95%)",
+            "description": "Definition: Value at Risk: worst loss you'd expect 95% of the time in a given time period.<br><br>Context: Measures tail risk — how bad things could get in a normal market.<br><br>Interpretation:<br>• -2% = 5% chance of losing more than 2% on a given day<br>• More negative = riskier"
         },
         {
-            "id": "cvar_95",
-            "title": "Conditional VaR (95%)",
-            "description": "Average loss beyond VaR"
+            "id": "spread_cvar_95",
+            "title": "Spread CVaR (95%)",
+            "description": "Definition: Conditional Value at Risk: the average of losses in the worst 5% of outcomes.<br><br>Context: A stronger measure than VaR — answers: 'How bad are the really bad days?'<br><br>Interpretation:<br>• -5% = in worst 5% of days, loss averaged 5%<br>• Smaller magnitude = better"
         },
         {
-            "id": "profit_factor",
-            "title": "Profit Factor",
-            "description": "Ratio of gross profits to gross losses"
+            "id": "spread_profit_factor",
+            "title": "Spread Profit Factor",
+            "description": "Definition: Ratio of total gains to total losses.<br><br>Context: A profit factor of 2.0 means you make $2 for every $1 lost.<br><br>Interpretation:<br>• >1.5 = decent<br>• >2.0 = strong<br>• <1.0 = losing strategy"
         },
         {
-            "id": "mae",
-            "title": "Mean Absolute Error",
-            "description": "Average absolute deviation from the mean"
+            "id": "spread_mae",
+            "title": "Spread MAE",
+            "description": "Definition: Max Adverse Excursion - Largest unrealized loss experienced before a trade becomes profitable.<br><br>Context: Shows how much you have to 'endure' during a trade.<br><br>Interpretation:<br>• 2% = on average, you had to sit through a 2% unrealized loss<br>• Lower = safer strategy"
         },
         {
-            "id": "adf_statistic",
-            "title": "ADF Statistic",
-            "description": "Augmented Dickey-Fuller test statistic"
+            "id": "cointegration_adf_stat",
+            "title": "Cointegration ADF Stat",
+            "description": "Definition: Augmented Dickey-Fuller test statistic for the spread.<br><br>Context: Used to check if the spread is stationary — a key assumption for mean reversion.<br><br>Interpretation:<br>• More negative = better (more likely stationary)<br>• -3.5 or lower = strong evidence of cointegration"
         },
         {
-            "id": "p_value",
-            "title": "P-Value",
-            "description": "Statistical significance of the ADF test"
+            "id": "cointegration_p_value",
+            "title": "Cointegration P-Value",
+            "description": "Definition: P-value from the ADF test.<br><br>Context: A small value means we reject the null hypothesis that the spread has a unit root (i.e., not stationary).<br><br>Interpretation:<br>• < 0.05 = good<br>• ~0.10 = weak evidence<br>• > 0.10 = not cointegrated → don't trade"
         },
         {
             "id": "hedge_ratio",
             "title": "Hedge Ratio",
-            "description": "Optimal ratio for hedging"
+            "description": "Definition: The ratio used to create the spread: spread = ticker1 - hedge_ratio × ticker2<br><br>Context: Derived from linear regression (often OLS). This controls for beta-like relationship.<br><br>Interpretation:<br>• hedge_ratio = 0.8 means buy 1 unit of ticker1 and short 0.8 units of ticker2"
         },
         {
-            "id": "half_life_days",
-            "title": "Half-Life (Days)",
-            "description": "Time for mean reversion"
+            "id": "mean_reversion_half_life_days",
+            "title": "Mean Reversion Half-Life",
+            "description": "Definition: How many days it takes for the spread to revert halfway to its mean after a shock.<br><br>Context: Indicates how quickly you can expect profits after entering a trade.<br><br>Interpretation:<br>• <5 days = fast mean reversion (good)<br>• >20 days = slow, inefficient<br>• Use this to time rebalancing or exits"
         },
         {
-            "id": "number_of_trades",
+            "id": "spread_z_score",
+            "title": "Spread Z-Score",
+            "description": "Definition: Number of standard deviations the current spread is from its historical mean.<br><br>Context: Used to trigger trades. If the spread is far from the mean, you expect it to revert.<br><br>Interpretation:<br>• z = +2 → spread is 2 std devs above mean → short the spread<br>• z = -2 → long the spread<br>• Values > |2| often trigger trades"
+        },
+        {
+            "id": "num_trades",
             "title": "Number of Trades",
-            "description": "Total number of trading signals"
+            "description": "Definition: How many trades were executed during the backtest.<br><br>Context: Gives a sense of sample size and strategy activity.<br><br>Interpretation:<br>• >30 = decent sample<br>• <10 = may not be enough data to evaluate"
         },
         {
             "id": "win_rate",
             "title": "Win Rate",
-            "description": "Percentage of profitable trades"
+            "description": "Definition: Percentage of trades that closed with a profit.<br><br>Context: Doesn't tell the whole story (you can win often but lose big), but still useful.<br><br>Interpretation:<br>• >60% = strong<br>• ~50% = coin toss<br>• <40% = weak unless profits are large"
         },
         {
-            "id": "mean_duration",
-            "title": "Mean Duration",
-            "description": "Average holding period"
-        },
-        {
-            "id": "z_score",
-            "title": "Z-Score",
-            "description": "Number of standard deviations from the mean"
+            "id": "mean_trade_duration_days",
+            "title": "Mean Trade Duration",
+            "description": "Definition: Average number of days your trades are open.<br><br>Context: Helps assess capital lock-up and turnover speed.<br><br>Interpretation:<br>• <3 days = short-term, high-frequency strategy<br>• >10 days = longer-term mean reversion<br>• Use to optimize your capital efficiency"
         }
     ]
 
